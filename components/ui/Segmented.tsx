@@ -10,7 +10,7 @@ export interface SegmentedOption<T extends string> {
 }
 
 /**
- * Segmented control with a pill that physically slides between options —
+ * Segmented control with a pill that physically slides between options,
  * measured from the DOM so it stays correct at any label width.
  */
 export function Segmented<T extends string>({

@@ -52,7 +52,7 @@ const STATEMENT: Row[] = [
         children: [
           { id: "net_sales", label: "Net sales", kind: "line", get: (m) => m.netSalesShopify, fieldIds: ["net_sales"] },
           { id: "shipping_income", label: "Shipping income", kind: "line", get: (m) => m.shippingIncomeShopify, fieldIds: ["shipping_income"] },
-          { id: "taxes", label: "Taxes collected", kind: "line", get: () => 0, fieldIds: ["taxes_collected"], info: "GST collected on orders. Pass-through — excluded from net profit." },
+          { id: "taxes", label: "Taxes collected", kind: "line", get: () => 0, fieldIds: ["taxes_collected"], info: "GST collected on orders. Pass-through, excluded from net profit." },
         ],
       },
       {
@@ -187,7 +187,7 @@ export function StatementTable({
     return map;
   }, []);
 
-  /** Largest absolute value in a row across the visible months — the scale for its magnitude bars. */
+  /** Largest absolute value in a row across the visible months. The scale for its magnitude bars. */
   const rowMax = (row: Row) => Math.max(...months.map((m) => Math.abs(row.get(m))), 1);
 
   const missingFor = (row: Row, m: MonthFigures) =>
@@ -369,7 +369,7 @@ export function StatementTable({
                             {missing.length ? (
                               <AlertTriangle size={11.5} className="shrink-0 text-warning" aria-label={`${missing.length} inputs missing`} />
                             ) : null}
-                            {suppressed ? <span className="text-ink-4">—</span> : fmt(v)}
+                            {suppressed ? <span className="text-ink-4">-</span> : fmt(v)}
                           </span>
                           {!suppressed && !condensed && row.kind !== "memo" && max > 0 && !emphasised ? (
                             <span className="mt-1 block">
@@ -385,7 +385,7 @@ export function StatementTable({
                                 higherIsBetter={row.higherIsBetter ?? !row.isCost}
                               />
                             ) : (
-                              <span className="text-ink-4">—</span>
+                              <span className="text-ink-4">-</span>
                             )}
                           </td>
                         ) : null}
@@ -399,10 +399,10 @@ export function StatementTable({
                       isNet ? (total < 0 ? "text-critical-ink" : "text-good-ink") : "text-ink",
                     )}
                   >
-                    {row.kind === "memo" || (isGroup && open) ? "—" : accounting(total)}
+                    {row.kind === "memo" || (isGroup && open) ? "-" : accounting(total)}
                   </td>
                   <td className="tnum border-b border-line-soft px-3 py-[7px] text-right text-ink-3 whitespace-nowrap">
-                    {row.kind === "memo" || revTotal === 0 || (isGroup && open) ? "—" : pct((total / revTotal) * 100)}
+                    {row.kind === "memo" || revTotal === 0 || (isGroup && open) ? "-" : pct((total / revTotal) * 100)}
                   </td>
                 </tr>
               );
@@ -441,15 +441,15 @@ export function StatementTable({
                               {prev !== null ? (
                                 <DeltaText value={changePct(v, prev)} higherIsBetter={row.higherIsBetter ?? true} />
                               ) : (
-                                <span className="text-ink-4">—</span>
+                                <span className="text-ink-4">-</span>
                               )}
                             </td>
                           ) : null}
                         </Fragment>
                       );
                     })}
-                    <td className="tnum border-b border-line-soft px-3 py-[7px] text-right text-ink-3">—</td>
-                    <td className="tnum border-b border-line-soft px-3 py-[7px] text-right text-ink-3">—</td>
+                    <td className="tnum border-b border-line-soft px-3 py-[7px] text-right text-ink-3">-</td>
+                    <td className="tnum border-b border-line-soft px-3 py-[7px] text-right text-ink-3">-</td>
                   </tr>
                 ))}
               </>

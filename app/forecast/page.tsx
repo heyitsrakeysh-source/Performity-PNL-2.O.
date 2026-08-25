@@ -1,10 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, Bell, Info, Target, TrendingDown } from "lucide-react";
 import { useWorkspace } from "@/lib/store";
 import { benchmarks, dailyPacing, pacingSummary } from "@/lib/data/derived";
-import { LOSING_SKUS, TOTAL_SKU_LOSS } from "@/lib/data/skus";
+import { breakEvenInsight, projectionInsight, skuInsight, benchmarkInsight } from "@/lib/data/insights";
+import { losingSkus, skuRowsFor, totalSkuLoss } from "@/lib/data/skus";
 import { ALERTS } from "@/lib/data/workspace";
 import { money, moneyCompact, num, pct } from "@/lib/format";
 import { PageHeader, PageShell } from "@/components/shell/PageHeader";
@@ -12,16 +14,20 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { Chip, StatusBadge } from "@/components/ui/Bits";
 import { Button } from "@/components/ui/Button";
 import { ChartCard } from "@/components/charts/primitives";
+import { ChartInsight } from "@/components/charts/ChartInsight";
 import { ProjectionChart } from "@/components/charts/Projection";
 import { BreakEvenTrack, BulletRow } from "@/components/charts/Misc";
 import { MiniBar } from "@/components/charts/MiniBar";
 import { cn } from "@/lib/cn";
 
 export default function ForecastPage() {
-  const { current, previous } = useWorkspace();
+  const { current, comparison } = useWorkspace();
 
+  const skuRows = useMemo(() => skuRowsFor(current), [current]);
+  const losers = useMemo(() => losingSkus(skuRows), [skuRows]);
+  const skuLoss = useMemo(() => totalSkuLoss(skuRows), [skuRows]);
   const pacing = pacingSummary(current);
-  const prevSeries = dailyPacing(previous).map((d) => d.cumulative);
+  const prevSeries = dailyPacing(comparison).map((d) => d.cumulative);
   const gap = -current.netProfit; // rupees of improvement needed to break even
   const losing = current.netProfit < 0;
 
@@ -31,7 +37,7 @@ export default function ForecastPage() {
       id: "cac",
       label: "Cut acquisition cost",
       need: `${money(gap / current.orders)} per order`,
-      detail: `CAC from ${money(current.cac)} to ${money(current.cac - gap / current.orders)} — a ${pct((gap / current.orders / current.cac) * 100)} reduction.`,
+      detail: `CAC from ${money(current.cac)} to ${money(current.cac - gap / current.orders)}, a ${pct((gap / current.orders / current.cac) * 100)} reduction.`,
       icon: TrendingDown,
     },
     {
@@ -45,14 +51,14 @@ export default function ForecastPage() {
       id: "volume",
       label: "Sell more at today's economics",
       need: `${num(Math.ceil(gap / Math.max(current.contributionPerOrder, 1)))} extra orders`,
-      detail: `Each order contributes ${money(current.contributionPerOrder)} before overhead, so volume alone can close the gap — but only while contribution stays positive.`,
+      detail: `Each order contributes ${money(current.contributionPerOrder)} before overhead, so volume alone can close the gap, but only while contribution stays positive.`,
       icon: Target,
     },
     {
       id: "skus",
       label: "Stop the loss-making SKUs",
-      need: money(Math.abs(TOTAL_SKU_LOSS)),
-      detail: `${LOSING_SKUS.length} SKUs are contribution-negative. Removing their loss alone would more than close a ${money(gap)} gap.`,
+      need: money(Math.abs(skuLoss)),
+      detail: `${losers.length} SKUs are contribution-negative. Removing their loss alone would more than close a ${money(gap)} gap.`,
       icon: AlertTriangle,
     },
     {
@@ -106,7 +112,8 @@ export default function ForecastPage() {
         <ChartCard
           title="Profit projection"
           subtitle="Cumulative net profit through the month, with a confidence band on the days still to come"
-          info="Solid is booked. Dashed and shaded is modelled from the current run rate — the only dashed marks in the product mean exactly that."
+          info="Solid is booked. Dashed and shaded is modelled from the current run rate. The only dashed marks in the product mean exactly that."
+          insight={projectionInsight(current, pacing.mtdNetProfit, pacing.projectedNetProfit, pacing.band, pacing.dayOfMonth, pacing.daysInMonth)}
           table={{
             columns: ["Day", "Cumulative", "That day", "Orders", "Status"],
             rows: pacing.series.map((d) => [
@@ -135,7 +142,7 @@ export default function ForecastPage() {
                 <svg width={14} height={6} aria-hidden>
                   <line x1={0} y1={3} x2={14} y2={3} stroke="var(--ink-4)" strokeWidth={1.5} />
                 </svg>
-                {previous.label}
+                {comparison.label}
               </span>
             </div>
           }
@@ -171,14 +178,7 @@ export default function ForecastPage() {
             ))}
           </div>
 
-          <div className="mt-auto flex items-start gap-2 rounded-md border border-line bg-surface-2 px-3 py-2.5">
-            <Info size={13} className="mt-px shrink-0 text-ink-4" />
-            <p className="text-[11.5px] leading-relaxed text-ink-3">
-              Contribution per order is {money(current.contributionPerOrder)} but fixed cost absorbs{" "}
-              {money(current.fixedPerOrder)} of it. That {money(current.contributionPerOrder - current.fixedPerOrder)}{" "}
-              gap per order is the whole story of the month.
-            </p>
-          </div>
+          <ChartInsight insight={breakEvenInsight(current)} className="mt-auto" />
         </Card>
       </div>
 
@@ -220,21 +220,22 @@ export default function ForecastPage() {
         <Card className="xl:col-span-1">
           <CardHeader
             title="Losing SKUs"
-            subtitle={`${LOSING_SKUS.length} items, ${money(TOTAL_SKU_LOSS)} of contribution`}
+            subtitle={`${losers.length} items, ${money(skuLoss)} of contribution`}
             action={
               <Link href="/unit-economics" className="text-[12px] font-medium text-brand-ink hover:underline">
                 All SKUs
               </Link>
             }
           />
+          <ChartInsight insight={skuInsight(losers, skuLoss, current, skuRows.length)} className="mt-3" />
           <ul className="mt-3 divide-y divide-line-soft">
-            {LOSING_SKUS.slice(0, 6).map((s, i) => (
+            {losers.slice(0, 6).map((s, i) => (
               <li key={s.id} className="flex items-center gap-3 py-2.5">
                 <span className="tnum w-4 shrink-0 text-[11px] font-semibold text-ink-4">{i + 1}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[12.5px] font-medium text-ink">{s.name}</span>
                   <span className="mt-1 block">
-                    <MiniBar value={s.totalContribution} max={Math.abs(LOSING_SKUS[0].totalContribution)} tone="critical" width={90} />
+                    <MiniBar value={s.totalContribution} max={Math.abs(losers[0].totalContribution)} tone="critical" width={90} />
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
@@ -250,8 +251,9 @@ export default function ForecastPage() {
           <CardHeader
             title="Against the peer median"
             subtitle="D2C footwear brands at a similar revenue band"
-            info="Peer figures are illustrative in the prototype — wire them to your benchmarking source."
+            info="Peer figures are illustrative in the prototype. Wire them to your benchmarking source."
           />
+          <ChartInsight insight={benchmarkInsight(current)} className="mt-3" />
           <div className="mt-2 divide-y divide-line-soft">
             {bench.map((b) => (
               <BulletRow

@@ -6,7 +6,7 @@ import { changePct, direction, pctDelta, ppDelta, tone } from "@/lib/format";
 
 /**
  * A signed movement badge. `higherIsBetter=false` inverts the colour so a
- * rising CAC reads as bad while still pointing up — direction and judgement
+ * rising CAC reads as bad while still pointing up, direction and judgement
  * are encoded separately, never collapsed into one channel.
  */
 export function Delta({
@@ -55,7 +55,7 @@ export function Delta({
   );
 }
 
-/** A plain coloured value — used inside dense tables where a pill is too loud. */
+/** A plain coloured value. Used inside dense tables where a pill is too loud. */
 export function DeltaText({
   value,
   higherIsBetter = true,
@@ -67,7 +67,7 @@ export function DeltaText({
   mode?: "pct" | "pp";
   className?: string;
 }) {
-  if (value === null) return <span className="text-ink-4">—</span>;
+  if (value === null) return <span className="text-ink-4">-</span>;
   const t = tone(value, higherIsBetter);
   const dir = direction(value);
   return (
@@ -80,7 +80,7 @@ export function DeltaText({
         className,
       )}
     >
-      {dir === "up" ? "▲" : dir === "down" ? "▼" : "–"}
+      {dir === "up" ? "▲" : dir === "down" ? "▼" : "-"}
       {mode === "pp" ? ppDelta(value) : pctDelta(value)}
     </span>
   );

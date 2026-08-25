@@ -38,8 +38,8 @@ export function Chip({
 /* -------------------------------------------------------- status badge --- */
 
 /**
- * Status always ships as icon + label. Colour alone never carries the state —
- * the warning amber is the same hue family as a chart series.
+ * Status always ships as icon + label. Colour alone never carries the state,
+ * because the warning amber is the same hue family as a chart series.
  */
 export function StatusBadge({
   status,

@@ -3,7 +3,7 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Inline magnitude bar for table rows. One colour for every row — length is
+ * Inline magnitude bar for table rows. One colour for every row, length is
  * already carrying the magnitude, so hue stays free.
  */
 export function MiniBar({

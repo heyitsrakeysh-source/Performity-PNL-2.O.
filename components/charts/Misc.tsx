@@ -8,7 +8,7 @@ import { seriesVar } from "@/lib/data/model";
 import { useMeasure } from "./primitives";
 
 /* ============================================================================
- * PER-ORDER BAR — where one order's rupee goes
+ * PER-ORDER BAR: where one order's rupee goes
  * ==========================================================================*/
 
 export function PerOrderBar({ month, height = 34 }: { month: MonthFigures; height?: number }) {
@@ -93,7 +93,7 @@ export function PerOrderBar({ month, height = 34 }: { month: MonthFigures; heigh
 }
 
 /* ============================================================================
- * BULLET — you against a peer median
+ * BULLET: you against a peer median
  * ==========================================================================*/
 
 export function BulletRow({
@@ -146,7 +146,7 @@ export function BulletRow({
 }
 
 /* ============================================================================
- * MARGIN GAUGE — margin against the break-even point
+ * MARGIN GAUGE: margin against the break-even point
  * ==========================================================================*/
 
 export function MarginGauge({

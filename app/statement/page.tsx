@@ -37,7 +37,7 @@ export default function StatementPage() {
           </>
         }
         title="Advanced P&L"
-        subtitle="Monthly breakdown of sales, cost of goods, operations and marketing, down to net profit. Every sub-line foots to its total, and every total rolls into the bottom line — change one input and the whole statement recalculates."
+        subtitle="Monthly breakdown of sales, cost of goods, operations and marketing, down to net profit. Every sub-line foots to its total, and every total rolls into the bottom line, change one input and the whole statement recalculates."
         actions={
           <>
             <Button icon={<Settings2 size={14} />} onClick={() => setPrefsOpen(true)}>
@@ -90,7 +90,7 @@ export default function StatementPage() {
       <Card className="mt-4">
         <CardHeader
           title="Statement"
-          subtitle={`${visibleMonths[0]?.label} — ${visibleMonths[visibleMonths.length - 1]?.label} · all values in ₹`}
+          subtitle={`${visibleMonths[0]?.label} to ${visibleMonths[visibleMonths.length - 1]?.label} · all values in ₹`}
           action={
             <span className="hidden items-center gap-1.5 text-[11.5px] text-ink-4 sm:flex">
               <Sparkles size={12} className="text-brand" />

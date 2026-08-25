@@ -139,7 +139,7 @@ export function WhatIfSimulator({ month }: { month: MonthFigures }) {
                   value={value}
                   onChange={(e) => setAdj((a) => ({ ...a, [l.id]: Number(e.target.value) }))}
                   className="slider"
-                  aria-valuetext={`${value > 0 ? "+" : ""}${value}% — ${l.format(simulatedValue)}`}
+                  aria-valuetext={`${value > 0 ? "+" : ""}${value}%, ${l.format(simulatedValue)}`}
                 />
               </div>
               <div className="mt-1 flex justify-between text-[10px] text-ink-4">
@@ -229,7 +229,7 @@ export function WhatIfSimulator({ month }: { month: MonthFigures }) {
           ))}
         </ol>
         <p className="mt-2 text-[11px] leading-snug text-brand-ink/80">
-          Measured by perturbing each driver against the live model — together these two move profit by{" "}
+          Measured by perturbing each driver against the live model. Together these two move profit by{" "}
           {money(ranked.reduce((s, r) => s + r.gain, 0))}.
         </p>
       </div>

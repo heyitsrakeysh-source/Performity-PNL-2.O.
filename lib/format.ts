@@ -14,7 +14,7 @@ const inr2 = new Intl.NumberFormat("en-IN", {
 
 export const RUPEE = "₹";
 
-/** ₹52,58,280 — full precision, Indian grouping. */
+/** ₹52,58,280. Full precision, Indian grouping. */
 export function money(value: number, opts: { decimals?: boolean; sign?: boolean } = {}) {
   const { decimals = false, sign = false } = opts;
   const n = Math.abs(value);
@@ -23,7 +23,7 @@ export function money(value: number, opts: { decimals?: boolean; sign?: boolean 
   return `${prefix}${RUPEE}${body}`;
 }
 
-/** ₹52.58L / ₹1.50Cr / ₹8,420 — for axes, tiles and dense tables. */
+/** ₹52.58L / ₹1.50Cr / ₹8,420. For axes, tiles and dense tables. */
 export function moneyCompact(value: number, opts: { sign?: boolean } = {}) {
   const n = Math.abs(value);
   const prefix = value < 0 ? "−" : opts.sign ? "+" : "";
@@ -33,7 +33,7 @@ export function moneyCompact(value: number, opts: { sign?: boolean } = {}) {
   return `${prefix}${RUPEE}${Math.round(n)}`;
 }
 
-/** Axis ticks: ₹60L, ₹0, −₹20L — no decimals, minimal ink. */
+/** Axis ticks: ₹60L, ₹0, −₹20L. No decimals, minimal ink. */
 export function axisMoney(value: number) {
   const n = Math.abs(value);
   const prefix = value < 0 ? "−" : "";
@@ -49,7 +49,7 @@ function trim(n: number) {
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
 }
 
-/** 1,847 — plain counts with Indian grouping. */
+/** 1,847. Plain counts with Indian grouping. */
 export function num(value: number, decimals = 0) {
   return new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: decimals,
@@ -62,16 +62,19 @@ export function pct(value: number, decimals = 1) {
   return `${value.toFixed(decimals)}%`;
 }
 
-/** +9.5% / −28.6% — a signed rate of change. */
+/** +9.5% / −28.6%. A signed rate of change. */
 export function pctDelta(value: number, decimals = 1) {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
   return `${sign}${Math.abs(value).toFixed(decimals)}%`;
 }
 
-/** +0.8pp — a signed difference between two percentages. */
+/**
+ * A signed difference between two percentages. Written with a % sign rather
+ * than "pp": the audience for this product reads percentage points as jargon.
+ */
 export function ppDelta(value: number, decimals = 1) {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${Math.abs(value).toFixed(decimals)}pp`;
+  return `${sign}${Math.abs(value).toFixed(decimals)}%`;
 }
 
 /** Accounting negatives for statement tables: (45,760). */

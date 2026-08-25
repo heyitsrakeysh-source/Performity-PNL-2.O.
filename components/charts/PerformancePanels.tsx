@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * "Performance over time" — the sketch put revenue/cost bars and a net-profit
+ * "Performance over time". The sketch put revenue/cost bars and a net-profit
  * line on two different y-scales. Two scales on one plot invent a correlation
  * that isn't in the data, so this is drawn as two stacked panels sharing one
  * x-axis instead: cost composition against a revenue reference on top, net
@@ -37,7 +37,7 @@ export function PerformancePanels({ months, height = 292 }: { months: MonthFigur
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
 
   const M = { top: 24, right: 12, bottom: 22, left: 46 };
-  const GAP = 34; // between the two panels — enough that their axes never collide
+  const GAP = 34; // between the two panels, enough that their axes never collide
   const XAXIS = 18;
   const topH = Math.round((height - GAP - XAXIS - M.top - M.bottom) * 0.68);
   const botH = height - GAP - XAXIS - M.top - M.bottom - topH;
@@ -119,7 +119,7 @@ export function PerformancePanels({ months, height = 292 }: { months: MonthFigur
                     );
                   })}
 
-                  {/* revenue reference cap — same axis, neutral ink so it
+                  {/* revenue reference cap, same axis, neutral ink so it
                       reads as a threshold rather than another category */}
                   <line
                     x1={x - 3}

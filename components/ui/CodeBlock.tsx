@@ -23,7 +23,7 @@ export function CodeBlock({
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      /* clipboard unavailable — the text is selectable either way */
+      /* clipboard unavailable. The text is selectable either way */
     }
   };
 

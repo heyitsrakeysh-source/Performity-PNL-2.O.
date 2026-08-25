@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * "Where your rupee goes" — replaces the donut in the concept sketch.
+ * "Where your rupee goes", replaces the donut in the concept sketch.
  *
  * A donut cannot carry seven parts legibly, and it hides the thing that
  * matters most here: whether the costs fit inside the revenue. A single
- * normalised track does both — every segment is directly labelled (which is
+ * normalised track does both. Every segment is directly labelled (which is
  * also the relief the amber slot's sub-3:1 contrast requires), and the
  * revenue marker shows the exact point where spending overtook income.
  */
@@ -105,7 +105,7 @@ function Track({
               return nodes;
             })()}
 
-            {/* revenue marker — everything to its right was spent beyond income */}
+            {/* revenue marker, everything to its right was spent beyond income */}
             {total > 100 ? (
               <g>
                 <line
@@ -133,28 +133,40 @@ function Track({
   );
 }
 
-export function RupeeRuler({ current, previous }: { current: MonthFigures; previous: MonthFigures }) {
+export function RupeeRuler({ current, comparison }: { current: MonthFigures; comparison: MonthFigures }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const { segs, total } = segmentsFor(current);
-  const prevMap = new Map(segmentsFor(previous).segs.map((s) => [s.id, s]));
+  const prevMap = new Map(segmentsFor(comparison).segs.map((s) => [s.id, s]));
 
   return (
     <div>
+      <div className="mb-1.5 flex items-center gap-3">
+        <span className="w-[74px] shrink-0" />
+        <span className="label-xs flex-1 text-[10px]">Share of every ₹100 of revenue</span>
+        <span className="label-xs w-[62px] shrink-0 text-right text-[10px]">Margin</span>
+      </div>
       <div className="space-y-2.5">
-        <Track m={current} label="This month" height={30} showLabels hovered={hovered} onHover={setHovered} />
-        <Track m={previous} label="Last month" height={16} showLabels={false} hovered={hovered} onHover={setHovered} />
+        <Track m={current} label={current.label} height={28} showLabels hovered={hovered} onHover={setHovered} />
+        <Track m={comparison} label={comparison.label} height={28} showLabels hovered={hovered} onHover={setHovered} />
       </div>
 
       {total > 100 ? (
         <p className="mt-3 flex items-center gap-1.5 rounded-md bg-critical-soft px-2.5 py-1.5 text-[11.5px] font-medium text-critical-ink">
           <span className="inline-block h-3 w-0.5 rounded-full bg-critical" aria-hidden />
-          Costs run to {pct(total)} of revenue — {pct(total - 100)} past the line.
+          Costs run to {pct(total)} of revenue, {pct(total - 100)} past the line.
         </p>
       ) : null}
 
       {/* ranked breakdown: the table twin lives inline, so no value is
           reachable only by hovering the bar */}
-      <ul className="mt-4 divide-y divide-line-soft">
+      <div className="mt-4 flex items-center gap-2.5 border-b border-line pb-1.5">
+        <span className="size-2.5 shrink-0" />
+        <span className="label-xs flex-1 text-[10px]">Where it went</span>
+        <span className="label-xs shrink-0 text-[10px]">{current.label}</span>
+        <span className="label-xs w-[52px] shrink-0 text-right text-[10px]">% of rev</span>
+        <span className="label-xs w-[62px] shrink-0 text-right text-[10px]">vs {comparison.shortLabel}</span>
+      </div>
+      <ul className="divide-y divide-line-soft">
         {[...segs]
           .sort((a, b) => b.value - a.value)
           .map((s) => {
@@ -176,11 +188,11 @@ export function RupeeRuler({ current, previous }: { current: MonthFigures; previ
                 <span className="tnum w-[52px] shrink-0 text-right text-[12px] text-ink-3">{pct(s.share)}</span>
                 <span
                   className={cn(
-                    "tnum w-[52px] shrink-0 text-right text-[11.5px] font-medium",
+                    "tnum w-[62px] shrink-0 text-right text-[11.5px] font-medium",
                     Math.abs(shift) < 0.05 ? "text-ink-4" : shift > 0 ? "text-critical-ink" : "text-good-ink",
                   )}
                 >
-                  {Math.abs(shift) < 0.05 ? "—" : `${shift > 0 ? "+" : "−"}${Math.abs(shift).toFixed(1)}pp`}
+                  {Math.abs(shift) < 0.05 ? "no change" : `${shift > 0 ? "+" : "−"}${Math.abs(shift).toFixed(1)}%`}
                 </span>
               </li>
             );
@@ -203,7 +215,9 @@ export function RupeeRuler({ current, previous }: { current: MonthFigures; previ
           <span className="tnum w-[52px] shrink-0 text-right text-[12px] font-semibold text-ink-2">
             {pct(current.netMarginPct, 1)}
           </span>
-          <span className="w-[52px] shrink-0" />
+          <span className="tnum w-[62px] shrink-0 text-right text-[11.5px] font-medium text-ink-3">
+            {pct(comparison.netMarginPct, 1)}
+          </span>
         </li>
       </ul>
     </div>

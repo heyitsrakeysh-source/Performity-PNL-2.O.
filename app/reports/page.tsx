@@ -3,7 +3,7 @@
 import { Bell, Calendar, FileText, Mail, Printer, Smartphone } from "lucide-react";
 import { useWorkspace } from "@/lib/store";
 import { attributeChange, dailyPacing, pacingSummary } from "@/lib/data/derived";
-import { LOSING_SKUS, TOTAL_SKU_LOSS } from "@/lib/data/skus";
+import { losingSkus, skuRowsFor, totalSkuLoss } from "@/lib/data/skus";
 import { money, moneyCompact, num, pct } from "@/lib/format";
 import { PageHeader, PageShell } from "@/components/shell/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -16,16 +16,19 @@ import { TrendPanels } from "@/components/charts/TrendPanels";
 import { Logo } from "@/components/shell/Logo";
 import { useToast } from "@/components/shell/Toast";
 import { cn } from "@/lib/cn";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function ReportsPage() {
-  const { current, previous, months } = useWorkspace();
+  const { current, comparison, months, visibleMonths, brand } = useWorkspace();
   const { push } = useToast();
   const [schedule, setSchedule] = useState({ daily: true, weekly: true, monthly: true, alerts: true });
 
-  const trail12 = months.slice(-12);
+  const skuRows = useMemo(() => skuRowsFor(current), [current]);
+  const losers = useMemo(() => losingSkus(skuRows), [skuRows]);
+  const skuLoss = useMemo(() => totalSkuLoss(skuRows), [skuRows]);
+  const trail12 = visibleMonths.length > 1 ? visibleMonths : months.slice(-12);
   const pacing = pacingSummary(current);
-  const drivers = attributeChange(previous, current);
+  const drivers = attributeChange(comparison, current);
   const yesterday = dailyPacing(current)[pacing.dayOfMonth - 1];
 
   const fixes = [
@@ -37,9 +40,9 @@ export default function ReportsPage() {
     },
     {
       n: 2,
-      title: `Retire the ${LOSING_SKUS.length} loss-making SKUs`,
-      body: `They consume ${money(Math.abs(TOTAL_SKU_LOSS))} of contribution while carrying ${pct((LOSING_SKUS.reduce((s, x) => s + x.orders, 0) / current.orders) * 100)} of order volume.`,
-      impact: money(Math.abs(TOTAL_SKU_LOSS)),
+      title: `Retire the ${losers.length} loss-making SKUs`,
+      body: `They consume ${money(Math.abs(skuLoss))} of contribution while carrying ${pct((losers.reduce((s, x) => s + x.orders, 0) / current.orders) * 100)} of order volume.`,
+      impact: money(Math.abs(skuLoss)),
     },
     {
       n: 3,
@@ -58,7 +61,7 @@ export default function ReportsPage() {
         subtitle="The board pack and the daily digest, generated from the same model the dashboard reads. The sheet below is laid out for A4 and prints without any of the app chrome."
         actions={
           <>
-            <Button icon={<Mail size={14} />} onClick={() => push({ title: "Report emailed", body: "Delivery is a demo action — connect your mail provider.", tone: "info" })}>
+            <Button icon={<Mail size={14} />} onClick={() => push({ title: "Report emailed", body: "Delivery is a demo action, connect your mail provider.", tone: "info" })}>
               Email to board
             </Button>
             <Button variant="primary" icon={<Printer size={14} />} onClick={() => window.print()}>
@@ -82,7 +85,7 @@ export default function ReportsPage() {
             </div>
 
             <h2 className="mt-6 text-[24px] font-bold tracking-[-0.025em] text-ink">
-              BxxyShoes — Monthly Profitability Report
+              {brand.name} Monthly Profitability Report
             </h2>
             <p className="mt-1 text-[14px] font-semibold text-brand-ink">{current.label}</p>
 
@@ -98,10 +101,10 @@ export default function ReportsPage() {
           {/* headline figures */}
           <div className="grid grid-cols-2 divide-x divide-line border-b border-line md:grid-cols-4">
             {[
-              { k: "Total revenue", v: moneyCompact(current.totalRevenue), cur: current.totalRevenue, prev: previous.totalRevenue, better: true },
-              { k: "Gross margin", v: pct(current.grossMarginPct), cur: current.grossMarginPct, prev: previous.grossMarginPct, better: true, pp: true },
-              { k: "Net profit", v: money(current.netProfit), cur: current.netProfit, prev: previous.netProfit, better: true, emphasis: true },
-              { k: "Net margin", v: pct(current.netMarginPct, 2), cur: current.netMarginPct, prev: previous.netMarginPct, better: true, pp: true, emphasis: true },
+              { k: "Total revenue", v: moneyCompact(current.totalRevenue), cur: current.totalRevenue, prev: comparison.totalRevenue, better: true },
+              { k: "Gross margin", v: pct(current.grossMarginPct), cur: current.grossMarginPct, prev: comparison.grossMarginPct, better: true, pp: true },
+              { k: "Net profit", v: money(current.netProfit), cur: current.netProfit, prev: comparison.netProfit, better: true, emphasis: true },
+              { k: "Net margin", v: pct(current.netMarginPct, 2), cur: current.netMarginPct, prev: comparison.netMarginPct, better: true, pp: true, emphasis: true },
             ].map((s) => (
               <div key={s.k} className="px-6 py-4">
                 <p className="text-[11.5px] font-medium text-ink-3">{s.k}</p>
@@ -120,7 +123,7 @@ export default function ReportsPage() {
 
           {/* trend */}
           <div className="border-b border-line px-8 py-6">
-            <h3 className="text-[13px] font-semibold text-ink">Net profit and margin — last twelve months</h3>
+            <h3 className="text-[13px] font-semibold text-ink">Net profit and margin over the last twelve months</h3>
             <div className="mt-3">
               <TrendPanels months={trail12} height={230} />
             </div>
@@ -129,7 +132,7 @@ export default function ReportsPage() {
           {/* statement summary + fixes */}
           <div className="grid grid-cols-1 divide-line lg:grid-cols-2 lg:divide-x">
             <div className="px-8 py-6">
-              <h3 className="text-[13px] font-semibold text-ink">P&amp;L summary — {current.label}</h3>
+              <h3 className="text-[13px] font-semibold text-ink">P&amp;L summary for {current.label}</h3>
               <table className="mt-3 w-full border-collapse text-[12px]">
                 <thead>
                   <tr className="border-b border-line">
@@ -141,12 +144,12 @@ export default function ReportsPage() {
                 </thead>
                 <tbody>
                   {[
-                    { k: "Total revenue", v: current.totalRevenue, p: previous.totalRevenue, better: true },
-                    { k: "Total COGS", v: current.cogs, p: previous.cogs, better: false },
-                    { k: "Gross profit", v: current.grossProfit, p: previous.grossProfit, better: true, strong: true },
-                    { k: "Operational costs", v: current.totalOperationalCosts, p: previous.totalOperationalCosts, better: false },
-                    { k: "Marketing expenses", v: current.totalMarketing, p: previous.totalMarketing, better: false },
-                    { k: "Net profit", v: current.netProfit, p: previous.netProfit, better: true, strong: true, final: true },
+                    { k: "Total revenue", v: current.totalRevenue, p: comparison.totalRevenue, better: true },
+                    { k: "Total COGS", v: current.cogs, p: comparison.cogs, better: false },
+                    { k: "Gross profit", v: current.grossProfit, p: comparison.grossProfit, better: true, strong: true },
+                    { k: "Operational costs", v: current.totalOperationalCosts, p: comparison.totalOperationalCosts, better: false },
+                    { k: "Marketing expenses", v: current.totalMarketing, p: comparison.totalMarketing, better: false },
+                    { k: "Net profit", v: current.netProfit, p: comparison.netProfit, better: true, strong: true, final: true },
                   ].map((r) => (
                     <tr key={r.k} className={cn("border-b border-line-soft", r.final && "border-t-2 border-line")}>
                       <td className={cn("py-2 text-ink-2", r.strong && "font-semibold text-ink")}>{r.k}</td>
@@ -202,7 +205,7 @@ export default function ReportsPage() {
           </div>
 
           <footer className="flex items-center justify-between border-t border-line px-8 py-4 text-[10.5px] text-ink-4">
-            <span>Confidential — prepared for the internal use of BxxyShoes.</span>
+            <span>Confidential. Prepared for the internal use of {brand.name}.</span>
             <span>Performity · generated from the live model</span>
           </footer>
         </div>
@@ -238,7 +241,7 @@ export default function ReportsPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] leading-snug text-ink-3">
-                  less {money(current.fixedCost / 31)} of daily overhead —{" "}
+                  less {money(current.fixedCost / 31)} of daily overhead,{" "}
                   <strong className={yesterday.daily < 0 ? "text-critical-ink" : "text-good-ink"}>
                     {money(yesterday.daily)} net
                   </strong>
@@ -264,10 +267,10 @@ export default function ReportsPage() {
 
                 <div className="mt-3 rounded-lg border border-line bg-warning-soft p-3">
                   <p className="text-[12px] font-semibold text-warning-ink">
-                    {LOSING_SKUS[0].name} is selling below cost
+                    {losers[0].name} is selling below cost
                   </p>
                   <p className="tnum mt-0.5 text-[11.5px] text-warning-ink">
-                    {money(LOSING_SKUS[0].contributionPerOrder)} per order
+                    {money(losers[0].contributionPerOrder)} per order
                   </p>
                 </div>
 

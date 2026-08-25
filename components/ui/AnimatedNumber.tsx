@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 /**
  * Renders a number that tweens when it *changes*.
  *
- * The first render is the exact value — no count-up on mount. That keeps
+ * The first render is the exact value. No count-up on mount. That keeps
  * server and client output identical (no hydration mismatch) and reserves
  * motion for what it should mean here: a figure just recalculated because
  * someone edited an input or moved a simulator slider.
@@ -41,7 +41,7 @@ export function AnimatedNumber({
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      // easeOutQuint — fast settle, no overshoot on currency.
+      // easeOutQuint, fast settle, no overshoot on currency.
       const eased = 1 - Math.pow(1 - t, 5);
       setDisplay(from + (value - from) * eased);
       if (t < 1) {

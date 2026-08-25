@@ -8,7 +8,7 @@ import type { MonthFigures } from "./model";
 import { DAYS_IN_CURRENT_MONTH, TODAY_DAY } from "./model";
 
 /* ============================================================================
- * 1. DRIVER ATTRIBUTION — why profit moved
+ * 1. DRIVER ATTRIBUTION: why profit moved
  * ==========================================================================*/
 
 export interface DriverImpact {
@@ -28,7 +28,7 @@ export interface DriverImpact {
  *
  * Drivers are substituted one at a time, in a fixed order, and each step's
  * effect is recorded. Because the substitution is sequential the parts sum to
- * the total change exactly — no unexplained residual.
+ * the total change exactly. No unexplained residual.
  */
 export function attributeChange(prev: MonthFigures, curr: MonthFigures): DriverImpact[] {
   type State = {
@@ -100,13 +100,13 @@ function fmtCompact(n: number) {
   return n >= 100000 ? `${(n / 100000).toFixed(2)}L` : fmtInt(n);
 }
 function signPct(a: number, b: number) {
-  if (!a) return "—";
+  if (!a) return "-";
   const p = ((b - a) / Math.abs(a)) * 100;
   return `${p >= 0 ? "+" : "−"}${Math.abs(p).toFixed(1)}%`;
 }
 
 /* ============================================================================
- * 2. PROFIT BRIDGE — revenue down to net profit for a single month
+ * 2. PROFIT BRIDGE: revenue down to net profit for a single month
  * ==========================================================================*/
 
 export interface BridgeStep {
@@ -127,7 +127,7 @@ export function profitBridge(m: MonthFigures): BridgeStep[] {
 }
 
 /* ============================================================================
- * 3. DAILY PACING — month-to-date actuals and a projection to close
+ * 3. DAILY PACING: month-to-date actuals and a projection to close
  * ==========================================================================*/
 
 export interface DayPoint {
@@ -143,7 +143,7 @@ export interface DayPoint {
   high?: number;
 }
 
-/** Weekday multipliers — D2C footwear skews to Thu–Sun. */
+/** Weekday multipliers. D2C footwear skews to Thu to Sun. */
 const WEEKDAY_WEIGHT = [0.86, 0.82, 0.9, 1.06, 1.18, 1.24, 0.98]; // Sun..Sat
 
 /** A fixed jitter table keeps the series identical on server and client. */
@@ -153,7 +153,7 @@ const JITTER = [
   1.04, 0.97, 1.06, 1.0, 0.95, 1.02, 0.98,
 ];
 
-/** One day of trading variance — the unit the projection band is built from. */
+/** One day of trading variance. The unit the projection band is built from. */
 function dailySpread(m: MonthFigures) {
   return Math.abs((m.orders / DAYS_IN_CURRENT_MONTH) * m.contributionPerOrder) * 0.21;
 }
@@ -182,7 +182,7 @@ export function dailyPacing(m: MonthFigures): DayPoint[] {
     const day = i + 1;
     const isProjected = day > TODAY_DAY;
     // The band widens with distance from today, scaled to a day's contribution
-    // rather than to revenue — it is daily trading that varies, not the base.
+    // rather than to revenue, it is daily trading that varies, not the base.
     const distance = Math.max(0, day - TODAY_DAY);
     const spread = dailySpread(m) * distance;
 
@@ -228,7 +228,7 @@ export function pacingSummary(m: MonthFigures) {
 }
 
 /* ============================================================================
- * 4. UNIT ECONOMICS WATERFALL — where one order's rupee goes
+ * 4. UNIT ECONOMICS WATERFALL: where one order's rupee goes
  * ==========================================================================*/
 
 export function perOrderBreakdown(m: MonthFigures) {
@@ -248,7 +248,7 @@ export function perOrderBreakdown(m: MonthFigures) {
 }
 
 /* ============================================================================
- * 5. INSIGHTS — written from the numbers, not hardcoded prose
+ * 5. INSIGHTS: written from the numbers, not hardcoded prose
  * ==========================================================================*/
 
 export interface Insight {
@@ -288,7 +288,7 @@ export function buildInsights(prev: MonthFigures, curr: MonthFigures): Insight[]
     metric: "Revenue",
     tone: revDelta >= 0 ? "good" : "bad",
     headline: `Revenue ${revDelta >= 0 ? "grew" : "declined"} ${Math.abs(revDelta).toFixed(1)}% to ₹${(curr.totalRevenue / 100000).toFixed(2)}L`,
-    body: `Driven by ${(((curr.orders - prev.orders) / prev.orders) * 100).toFixed(1)}% order growth at an AOV of ₹${Math.round(curr.aov)}. Growth is outpacing profitability — contribution per order is ₹${Math.round(curr.contributionPerOrder)}.`,
+    body: `Driven by ${(((curr.orders - prev.orders) / prev.orders) * 100).toFixed(1)}% order growth at an AOV of ₹${Math.round(curr.aov)}. Growth is outpacing profitability, contribution per order is ₹${Math.round(curr.contributionPerOrder)}.`,
   });
 
   out.push({
@@ -304,7 +304,7 @@ export function buildInsights(prev: MonthFigures, curr: MonthFigures): Insight[]
 }
 
 /* ============================================================================
- * 6. BENCHMARKS — brand vs peer median
+ * 6. BENCHMARKS: brand vs peer median
  * ==========================================================================*/
 
 export function benchmarks(m: MonthFigures) {

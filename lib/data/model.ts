@@ -7,12 +7,12 @@
  * *drivers* (orders, per-order economics, fixed costs). Nothing is hardcoded
  * downstream, which means:
  *
- *   • the statement always foots — sub-lines sum to their totals, and totals
+ *   • the statement always foots, sub-lines sum to their totals, and totals
  *     roll into net profit exactly;
  *   • the what-if simulator is real arithmetic, not a canned result;
  *   • the waterfall's driver attribution is computed, not authored.
  *
- * ⚠️  PROTOTYPE DATA. Replace `MONTH_DRIVERS` with a real fetch — see
+ * ⚠️  PROTOTYPE DATA. Replace `MONTH_DRIVERS` with a real fetch. See
  *     /guide inside the app, and `lib/data/README` notes in the repo README.
  *     Keep `computeMonth()` as-is: it is the calculation contract the UI
  *     is written against.
@@ -237,7 +237,7 @@ export function computeMonth(d: MonthDrivers): MonthFigures {
 }
 
 /* ---------------------------------------------------------------------------
- * DRIVER SERIES — 18 months, Mar 2025 → Aug 2026.
+ * DRIVER SERIES: 18 months, Mar 2025 → Aug 2026.
  *
  * The story encoded here: a brand that grew revenue steadily while its
  * acquisition cost crept from ₹548 to ₹764 an order, quietly eating a
@@ -262,6 +262,12 @@ interface Anchor {
 }
 
 const ANCHORS: Anchor[] = [
+  { key: "2024-09", orders: 1620, netAov: 1935, cogsPerOrder: 756, cac: 603, shippingPerOrder: 118, packagingPerOrder: 35, txnFeePerOrder: 36, returnRate: 0.052, returnDiscountRate: 0.039, fixedTotal: 246000, shopifyShare: 0.94, otherMarketing: 38000 },
+  { key: "2024-10", orders: 1740, netAov: 1928, cogsPerOrder: 754, cac: 611, shippingPerOrder: 119, packagingPerOrder: 35, txnFeePerOrder: 36, returnRate: 0.053, returnDiscountRate: 0.039, fixedTotal: 249000, shopifyShare: 0.94, otherMarketing: 40000 },
+  { key: "2024-11", orders: 2050, netAov: 1902, cogsPerOrder: 750, cac: 635, shippingPerOrder: 120, packagingPerOrder: 36, txnFeePerOrder: 36, returnRate: 0.055, returnDiscountRate: 0.043, fixedTotal: 253000, shopifyShare: 0.93, otherMarketing: 48000 },
+  { key: "2024-12", orders: 1980, netAov: 1910, cogsPerOrder: 749, cac: 646, shippingPerOrder: 120, packagingPerOrder: 36, txnFeePerOrder: 37, returnRate: 0.056, returnDiscountRate: 0.042, fixedTotal: 257000, shopifyShare: 0.93, otherMarketing: 46000 },
+  { key: "2025-01", orders: 1790, netAov: 1922, cogsPerOrder: 751, cac: 608, shippingPerOrder: 120, packagingPerOrder: 36, txnFeePerOrder: 37, returnRate: 0.055, returnDiscountRate: 0.040, fixedTotal: 260000, shopifyShare: 0.93, otherMarketing: 40000 },
+  { key: "2025-02", orders: 1830, netAov: 1918, cogsPerOrder: 750, cac: 610, shippingPerOrder: 121, packagingPerOrder: 36, txnFeePerOrder: 37, returnRate: 0.056, returnDiscountRate: 0.040, fixedTotal: 263000, shopifyShare: 0.93, otherMarketing: 40000 },
   { key: "2025-03", orders: 1892, netAov: 1912, cogsPerOrder: 748, cac: 592, shippingPerOrder: 121, packagingPerOrder: 36, txnFeePerOrder: 37, returnRate: 0.058, returnDiscountRate: 0.041, fixedTotal: 305700, shopifyShare: 0.93, otherMarketing: 42000 },
   { key: "2025-04", orders: 1974, netAov: 1904, cogsPerOrder: 745, cac: 597, shippingPerOrder: 122, packagingPerOrder: 36, txnFeePerOrder: 37, returnRate: 0.059, returnDiscountRate: 0.042, fixedTotal: 310900, shopifyShare: 0.93, otherMarketing: 44000 },
   { key: "2025-05", orders: 2036, netAov: 1898, cogsPerOrder: 743, cac: 599, shippingPerOrder: 123, packagingPerOrder: 37, txnFeePerOrder: 38, returnRate: 0.060, returnDiscountRate: 0.042, fixedTotal: 313500, shopifyShare: 0.92, otherMarketing: 46000 },
@@ -280,7 +286,7 @@ const ANCHORS: Anchor[] = [
   { key: "2026-05", orders: 2571, netAov: 1846, cogsPerOrder: 718, cac: 705, shippingPerOrder: 130, packagingPerOrder: 40, txnFeePerOrder: 39, returnRate: 0.079, returnDiscountRate: 0.049, fixedTotal: 389900, shopifyShare: 0.89, otherMarketing: 60000 },
   { key: "2026-06", orders: 2604, netAov: 1841, cogsPerOrder: 716, cac: 712, shippingPerOrder: 130, packagingPerOrder: 41, txnFeePerOrder: 39, returnRate: 0.081, returnDiscountRate: 0.050, fixedTotal: 396000, shopifyShare: 0.89, otherMarketing: 60000 },
   { key: "2026-07", orders: 2718, netAov: 1839, cogsPerOrder: 714, cac: 728, shippingPerOrder: 131, packagingPerOrder: 41, txnFeePerOrder: 39, returnRate: 0.083, returnDiscountRate: 0.050, fixedTotal: 402900, shopifyShare: 0.88, otherMarketing: 62000 },
-  // Aug 2026 — the month the product opens on. Tuned so the statement foots to
+  // Aug 2026. The month the product opens on. Tuned so the statement foots to
   // a −₹18,640 net profit on 2,847 orders: the "small loss" the story explains.
   { key: "2026-08", orders: 2847, netAov: 1841.6, cogsPerOrder: 712, cac: 764, shippingPerOrder: 132, packagingPerOrder: 41, txnFeePerOrder: 39, returnRate: 0.086, returnDiscountRate: 0.051, fixedTotal: 409313, shopifyShare: 0.88, otherMarketing: 62000 },
 ];
@@ -293,23 +299,126 @@ function splitFixed(total: number): FixedCosts {
   return { rent, salaries, software, other: total - rent - salaries - software };
 }
 
-export const MONTH_DRIVERS: MonthDrivers[] = ANCHORS.map((a) => ({
-  key: a.key,
-  orders: a.orders,
-  netAov: a.netAov,
-  cogsPerOrder: a.cogsPerOrder,
-  shippingPerOrder: a.shippingPerOrder,
-  packagingPerOrder: a.packagingPerOrder,
-  txnFeePerOrder: a.txnFeePerOrder,
-  cac: a.cac,
-  returnDiscountRate: a.returnDiscountRate,
-  returnRate: a.returnRate,
-  fixed: splitFixed(a.fixedTotal),
-  shopifyShare: a.shopifyShare,
-  shippingIncomePerOrder: 5.4,
-  otherMarketing: a.otherMarketing,
-  tax: 0,
-}));
+function toDrivers(a: Anchor): MonthDrivers {
+  return {
+    key: a.key,
+    orders: a.orders,
+    netAov: a.netAov,
+    cogsPerOrder: a.cogsPerOrder,
+    shippingPerOrder: a.shippingPerOrder,
+    packagingPerOrder: a.packagingPerOrder,
+    txnFeePerOrder: a.txnFeePerOrder,
+    cac: a.cac,
+    returnDiscountRate: a.returnDiscountRate,
+    returnRate: a.returnRate,
+    fixed: splitFixed(a.fixedTotal),
+    shopifyShare: a.shopifyShare,
+    shippingIncomePerOrder: 5.4,
+    otherMarketing: a.otherMarketing,
+    tax: 0,
+  };
+}
+
+/* ---------------------------------------------------------------------------
+ * BRANDS
+ *
+ * Each workspace runs the same engine over a different set of drivers, so
+ * switching brand in the topbar genuinely changes every figure in the product
+ * rather than relabelling the same numbers.
+ * ------------------------------------------------------------------------- */
+
+export interface BrandProfile {
+  id: string;
+  name: string;
+  initials: string;
+  plan: string;
+  category: string;
+  /** Multipliers applied to the base series to give each brand its own shape. */
+  orders: number;
+  aov: number;
+  cogs: number;
+  cac: number;
+  fixed: number;
+  shipping: number;
+  returns: number;
+  /** How the acquisition story trends across the window. */
+  cacDrift: number;
+  headline: string;
+}
+
+export const BRAND_PROFILES: BrandProfile[] = [
+  {
+    id: "bxxyshoes",
+    name: "BxxyShoes",
+    initials: "BX",
+    plan: "Growth",
+    category: "Footwear",
+    orders: 1, aov: 1, cogs: 1, cac: 1, fixed: 1, shipping: 1, returns: 1,
+    cacDrift: 1,
+    headline: "Revenue growing, margin eaten by rising acquisition cost.",
+  },
+  {
+    id: "lunelabs",
+    name: "Lune Labs",
+    initials: "LL",
+    plan: "Scale",
+    category: "Skincare",
+    // Higher margin, cheaper to ship, lighter returns: comfortably profitable.
+    orders: 2.35, aov: 0.74, cogs: 0.727, cac: 1.942, fixed: 1.9, shipping: 0.52, returns: 0.34,
+    cacDrift: 0.55,
+    headline: "High-margin repeat category holding a healthy net margin.",
+  },
+  {
+    id: "northwear",
+    name: "Northwear Co.",
+    initials: "NW",
+    plan: "Growth",
+    category: "Apparel",
+    // Discount-led apparel: heavy returns and overhead, deeper into the red.
+    orders: 0.62, aov: 1.28, cogs: 1.09, cac: 0.761, fixed: 1.12, shipping: 1.18, returns: 1.85,
+    cacDrift: 1.35,
+    headline: "Discount-led growth with returns and acquisition both running hot.",
+  },
+];
+
+export const DEFAULT_BRAND_ID = BRAND_PROFILES[0].id;
+
+export function brandProfile(id: string): BrandProfile {
+  return BRAND_PROFILES.find((b) => b.id === id) ?? BRAND_PROFILES[0];
+}
+
+/** Applies a brand's profile to the base driver series. */
+export function driversForBrand(brandId: string): MonthDrivers[] {
+  const b = brandProfile(brandId);
+  const n = ANCHORS.length;
+
+  return ANCHORS.map((a, i) => {
+    const base = toDrivers(a);
+
+    // Drift ramps across the window so each brand has its own trajectory,
+    // not just a flat rescaling of the same curve.
+    const t = n > 1 ? i / (n - 1) : 0;
+    const drift = 1 + (b.cacDrift - 1) * t;
+
+    const fixedTotal = a.fixedTotal * b.fixed;
+    return {
+      ...base,
+      orders: Math.round(a.orders * b.orders),
+      netAov: a.netAov * b.aov,
+      cogsPerOrder: a.cogsPerOrder * b.aov * b.cogs,
+      shippingPerOrder: a.shippingPerOrder * b.shipping,
+      packagingPerOrder: a.packagingPerOrder * b.shipping,
+      txnFeePerOrder: a.txnFeePerOrder * b.aov,
+      cac: a.cac * b.aov * b.cac * drift,
+      returnRate: Math.min(0.35, a.returnRate * b.returns),
+      returnDiscountRate: Math.min(0.3, a.returnDiscountRate * b.returns),
+      fixed: splitFixed(Math.round(fixedTotal)),
+      otherMarketing: Math.round(a.otherMarketing * b.orders * b.aov),
+    };
+  });
+}
+
+export const MONTH_DRIVERS: MonthDrivers[] = ANCHORS.map(toDrivers);
 
 export const MONTHS: MonthFigures[] = MONTH_DRIVERS.map(computeMonth);
 
@@ -329,7 +438,7 @@ export function priorMonth(key: MonthKey): MonthFigures | undefined {
 }
 
 /* ---------------------------------------------------------------------------
- * Cost taxonomy — the fixed slot order behind every categorical chart.
+ * Cost taxonomy. The fixed slot order behind every categorical chart.
  * Slot order is the CVD-safety mechanism, so it never changes and colours
  * follow the entity, never its current rank.
  * ------------------------------------------------------------------------- */
@@ -367,3 +476,188 @@ export function costBreakdown(m: MonthFigures) {
     },
   };
 }
+
+/* ---------------------------------------------------------------------------
+ * QUARTER AGGREGATION
+ *
+ * Money and volume are summed; every rate is recomputed from those sums rather
+ * than averaged, so a quarter's margin is the quarter's actual margin and not
+ * the mean of three monthly margins.
+ * ------------------------------------------------------------------------- */
+
+export interface QuarterFigures {
+  key: string;
+  label: string;
+  shortLabel: string;
+  year: number;
+  quarter: 1 | 2 | 3 | 4;
+  months: MonthFigures[];
+  /** True when the quarter has fewer than three months of data in range. */
+  partial: boolean;
+
+  orders: number;
+  totalRevenue: number;
+  cogs: number;
+  grossProfit: number;
+  shipping: number;
+  packaging: number;
+  transactionFees: number;
+  fixedCost: number;
+  totalOperationalCosts: number;
+  profitAfterOperationalCosts: number;
+  totalMarketing: number;
+  adSpend: number;
+  netProfit: number;
+
+  grossMarginPct: number;
+  netMarginPct: number;
+  aov: number;
+  cac: number;
+  contributionPerOrder: number;
+  roas: number;
+  breakEvenRoas: number;
+  breakEvenCac: number;
+  fixedPerOrder: number;
+  cogsPerOrder: number;
+  shippingPerOrder: number;
+  returnRate: number;
+}
+
+export function aggregateQuarters(months: MonthFigures[]): QuarterFigures[] {
+  const buckets = new Map<string, MonthFigures[]>();
+  for (const m of months) {
+    const key = `${m.year}-Q${m.quarter}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key)!.push(m);
+  }
+
+  return [...buckets.entries()].map(([key, ms]) => {
+    const sum = (fn: (m: MonthFigures) => number) => ms.reduce((s, m) => s + fn(m), 0);
+
+    const orders = sum((m) => m.orders);
+    const totalRevenue = sum((m) => m.totalRevenue);
+    const cogs = sum((m) => m.cogs);
+    const shipping = sum((m) => m.shipping);
+    const packaging = sum((m) => m.packaging);
+    const transactionFees = sum((m) => m.transactionFees);
+    const fixedCost = sum((m) => m.fixedCost);
+    const totalOperationalCosts = sum((m) => m.totalOperationalCosts);
+    const totalMarketing = sum((m) => m.totalMarketing);
+    const adSpend = sum((m) => m.adSpend);
+    const netProfit = sum((m) => m.netProfit);
+    const grossProfit = totalRevenue - cogs;
+
+    const first = ms[0];
+    return {
+      key,
+      label: `Q${first.quarter} ${first.year}`,
+      shortLabel: `Q${first.quarter} '${String(first.year).slice(2)}`,
+      year: first.year,
+      quarter: first.quarter,
+      months: ms,
+      partial: ms.length < 3,
+
+      orders,
+      totalRevenue,
+      cogs,
+      grossProfit,
+      shipping,
+      packaging,
+      transactionFees,
+      fixedCost,
+      totalOperationalCosts,
+      profitAfterOperationalCosts: grossProfit - totalOperationalCosts,
+      totalMarketing,
+      adSpend,
+      netProfit,
+
+      grossMarginPct: (grossProfit / totalRevenue) * 100,
+      netMarginPct: (netProfit / totalRevenue) * 100,
+      aov: totalRevenue / orders,
+      cac: adSpend / orders,
+      contributionPerOrder: (netProfit + fixedCost + totalMarketing - adSpend) / orders,
+      roas: totalRevenue / adSpend,
+      breakEvenRoas: adSpend + netProfit > 0 ? totalRevenue / (adSpend + netProfit) : Infinity,
+      breakEvenCac: (adSpend + netProfit) / orders,
+      fixedPerOrder: fixedCost / orders,
+      cogsPerOrder: cogs / orders,
+      shippingPerOrder: shipping / orders,
+      // Volume-weighted so a big month is not averaged away by a small one.
+      returnRate: ms.reduce((s2, m) => s2 + m.returnRate * m.orders, 0) / orders,
+    };
+  });
+}
+
+/* ---------------------------------------------------------------------------
+ * DATE RANGE PRESETS
+ * ------------------------------------------------------------------------- */
+
+export type RangePresetId =
+  | "last3"
+  | "last6"
+  | "last12"
+  | "thisQuarter"
+  | "lastQuarter"
+  | "ytd"
+  | "custom";
+
+export interface RangePreset {
+  id: RangePresetId;
+  label: string;
+  hint?: string;
+}
+
+export const RANGE_PRESETS: RangePreset[] = [
+  { id: "last3", label: "Last 3 months" },
+  { id: "last6", label: "Last 6 months" },
+  { id: "last12", label: "Last 12 months" },
+  { id: "thisQuarter", label: "This quarter" },
+  { id: "lastQuarter", label: "Last quarter" },
+  { id: "ytd", label: "Year to date" },
+  { id: "custom", label: "Custom range" },
+];
+
+/** Resolves a preset into concrete month keys against the available series. */
+export function resolveRange(preset: RangePresetId): { from: MonthKey; to: MonthKey } {
+  const keys = MONTHS.map((m) => m.key);
+  const last = MONTHS[MONTHS.length - 1];
+  const lastKey = last.key;
+
+  const back = (n: number) => keys[Math.max(0, keys.length - n)];
+
+  switch (preset) {
+    case "last3":
+      return { from: back(3), to: lastKey };
+    case "last6":
+      return { from: back(6), to: lastKey };
+    case "last12":
+      return { from: back(12), to: lastKey };
+    case "thisQuarter": {
+      const inQ = MONTHS.filter((m) => m.year === last.year && m.quarter === last.quarter);
+      return { from: inQ[0].key, to: lastKey };
+    }
+    case "lastQuarter": {
+      const prevQ = last.quarter === 1 ? 4 : ((last.quarter - 1) as 1 | 2 | 3 | 4);
+      const prevY = last.quarter === 1 ? last.year - 1 : last.year;
+      const inQ = MONTHS.filter((m) => m.year === prevY && m.quarter === prevQ);
+      return inQ.length
+        ? { from: inQ[0].key, to: inQ[inQ.length - 1].key }
+        : { from: back(3), to: lastKey };
+    }
+    case "ytd": {
+      const inYear = MONTHS.filter((m) => m.year === last.year);
+      return { from: inYear[0].key, to: lastKey };
+    }
+    default:
+      return { from: back(12), to: lastKey };
+  }
+}
+
+/** How the headline figures are compared against a prior period. */
+export type CompareBasis = "mom" | "qoq" | "yoy";
+
+export const COMPARE_OPTIONS: { id: CompareBasis; label: string; short: string; offset: number }[] = [
+  { id: "mom", label: "vs previous month", short: "MoM", offset: 1 },
+  { id: "qoq", label: "vs previous quarter", short: "QoQ", offset: 3 },
+  { id: "yoy", label: "vs same month last year", short: "YoY", offset: 12 },
+];

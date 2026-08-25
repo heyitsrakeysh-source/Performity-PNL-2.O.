@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SKU profitability. Volume on x (log — order counts span two orders of
+ * SKU profitability. Volume on x (log, order counts span two orders of
  * magnitude), contribution per order on y, revenue as area. Colour is
  * diverging polarity (loses money / makes money), not identity, so the
  * categorical slot rules don't apply here.
@@ -29,7 +29,7 @@ export function SkuScatter({ skus, height = 320 }: { skus: SkuRow[]; height?: nu
   const minO = Math.min(...rows.map((s) => s.orders));
   const maxO = Math.max(...rows.map((s) => s.orders));
   // Volume spans well under a decade here, so a linear axis reads more
-  // honestly than a log one — no artificial compression at the top end.
+  // honestly than a log one. No artificial compression at the top end.
   const xAxis = niceScale(0, maxO * 1.06, 4);
   const x = linearScale([xAxis.min, xAxis.max], [M.left, M.left + innerW]);
 
@@ -84,7 +84,7 @@ export function SkuScatter({ skus, height = 320 }: { skus: SkuRow[]; height?: nu
                 fontWeight={600}
                 fill="var(--good-ink)"
               >
-                {best.name.split(" — ")[0]}
+                {best.name.split(" - ")[0]}
               </text>
             );
           })()}
@@ -175,7 +175,7 @@ export function SkuScatter({ skus, height = 320 }: { skus: SkuRow[]; height?: nu
                     fontWeight={600}
                     fill="var(--critical-ink)"
                   >
-                    {s.name.split(" — ")[0]}
+                    {s.name.split(" - ")[0]}
                   </text>
                 </g>
               );

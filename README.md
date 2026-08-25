@@ -1,9 +1,9 @@
-# Performity — P&L 2.0
+# Performity P&L 2.0
 
 A profitability intelligence platform for D2C brands. It answers one question
 well: **where did the money go, and what do we do about it?**
 
-Built as a working prototype — every screen is interactive, every figure is
+Built as a working prototype. Every screen is interactive, every figure is
 computed, and the whole thing deploys to Vercel with zero configuration.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-000?style=flat-square)
@@ -31,13 +31,13 @@ later.
 
 ---
 
-## Deploying — GitHub → GitHub Desktop → Vercel
+## Deploying: GitHub → GitHub Desktop → Vercel
 
 1. **GitHub Desktop** → File → *Add Local Repository* → pick this folder. A git
    repository with an initial commit is already here.
 2. Click **Publish repository** (private is a good default).
 3. **vercel.com** → *Add New → Project* → import the repo.
-4. Leave every build setting on its default — framework detection finds
+4. Leave every build setting on its default, framework detection finds
    Next.js.
 5. **Deploy.** Pushes to `main` ship to production; branches get preview URLs.
 
@@ -49,17 +49,33 @@ Nothing needs configuring for the prototype to deploy successfully.
 
 | Route | What it does |
 |---|---|
-| `/overview` | The month at a glance — KPI tiles, cost composition, profit bridge, condensed statement |
-| `/story` | *What changed* — a written explanation of the profit move, with every rupee attributed to a driver |
+| `/overview` | The month at a glance. KPI tiles, cost composition, profit bridge, condensed statement |
+| `/story` | *What changed*, a written explanation of the profit move, with every rupee attributed to a driver |
 | `/statement` | The full P&L, with an input editor that recalculates the statement live |
 | `/forecast` | Month-to-date pacing, projection to close, break-even analysis, and five solved levers |
 | `/unit-economics` | Per-order economics and per-SKU profitability, with a kill list |
 | `/explorer` | Profit-flow Sankey, margin-leak heatmap, and a what-if simulator |
 | `/reports` | A print-ready board pack and the daily digest |
-| `/guide` | **Go-live guide** — everything to change to turn this into a real product |
+| `/guide` | **Go-live guide**, everything to change to turn this into a real product |
 
 Press <kbd>⌘</kbd><kbd>K</kbd> anywhere for the command palette.
 <kbd>⌘</kbd><kbd>\\</kbd> collapses the sidebar.
+
+### Things worth trying
+
+- **Switch workspace** in the topbar. The three brands are genuinely different
+  businesses: a footwear brand slipping into a small loss, a profitable
+  skincare brand, and an apparel brand losing money on returns and
+  acquisition. Every figure, chart and insight changes with them.
+- **Change the period and the comparison** in the filter bar. The comparison is
+  universal: pick "August against January" and every delta, badge and sentence
+  in the product is measured against January.
+- **Swap a headline tile** by clicking its name. The four tiles are
+  configurable from a catalogue of eighteen metrics, and the choice is
+  remembered.
+- **Expand any insight** with the chevron. Each one is computed from the live
+  model and names the line responsible for the movement.
+- **Edit an input** on the statement and watch the whole product recalculate.
 
 ---
 
@@ -77,14 +93,14 @@ computeMonth(drivers: MonthDrivers): MonthFigures
 Feed it orders and per-order economics; it returns the full statement. Because
 every page reads from it rather than from stored figures:
 
-- **the statement always foots** — sub-lines sum to their totals, totals roll
+- **the statement always foots**, sub-lines sum to their totals, totals roll
   into net profit, and revenue reconciles across channels;
-- **the driver attribution is computed, not authored** — `attributeChange()`
+- **the driver attribution is computed, not authored**, `attributeChange()`
   substitutes one driver at a time into the same equation, so the waterfall
   sums exactly to the change in profit with no residual;
-- **the what-if simulator is real arithmetic** — sliders write drivers and the
+- **the what-if simulator is real arithmetic**, sliders write drivers and the
   month is recomputed end to end;
-- **editing an input updates everything at once** — the statement drawer writes
+- **editing an input updates everything at once**. The statement drawer writes
   back into the model, and every card, chart and table follows.
 
 The demo month is tuned to land on a −₹18,640 net profit on 2,847 orders: a
@@ -105,7 +121,7 @@ much larger than the marks. A few decisions worth knowing about:
   hovering.
 - **The categorical palette is validated, not eyeballed.** Six slots, checked
   for lightness band, chroma floor, colourblind separation (OKLab ΔE),
-  normal-vision separation and surface contrast — separately for light and
+  normal-vision separation and surface contrast, separately for light and
   dark, because the dark palette is re-stepped for its surface rather than
   flipped. Slot order is fixed, so colour follows the entity and a filter never
   repaints the survivors.
@@ -128,7 +144,7 @@ theme that is a designed palette rather than an inverted one.
 
 ```
 app/
-  layout.tsx            root layout — theme boot, providers, app shell
+  layout.tsx            root layout, theme boot, providers, app shell
   globals.css           design tokens, motion, print styles
   overview/ story/ statement/ forecast/
   unit-economics/ explorer/ reports/ guide/
@@ -145,7 +161,7 @@ lib/
   data/derived.ts       attribution, pacing, insights, benchmarks
   data/workspace.ts     input schema, alerts, org content
   data/guide.ts         go-live guide content
-  store.tsx             workspace state — the only place data is read
+  store.tsx             workspace state. The only place data is read
   format.ts             Indian-locale currency and number formatting
 ```
 

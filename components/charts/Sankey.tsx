@@ -5,7 +5,7 @@
  * discounts, then splits into the cost streams that consume it.
  *
  * When costs exceed revenue the outflow ribbons are scaled to total spend and
- * the shortfall is called out explicitly — a ribbon can't be drawn for money
+ * the shortfall is called out explicitly, a ribbon can't be drawn for money
  * that was never there, and shrinking the others to fake a fit would misstate
  * the composition.
  */
@@ -213,7 +213,7 @@ export function SankeyFlow({ month, height = 380 }: { month: MonthFigures; heigh
         <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-critical-soft px-3 py-2">
           <span className="size-2 shrink-0 rounded-full bg-critical" aria-hidden />
           <p className="text-[11.5px] font-medium text-critical-ink">
-            Outflows total {money(totalOutflow)} — {money(Math.abs(loss))} more than the revenue that funded them
+            Outflows total {money(totalOutflow)}, {money(Math.abs(loss))} more than the revenue that funded them
             ({pct(Math.abs(month.netMarginPct), 2)} of revenue).
           </p>
         </div>

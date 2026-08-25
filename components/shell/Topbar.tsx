@@ -20,7 +20,10 @@ import {
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { BRANDS, CURRENT_USER, NOTIFICATIONS } from "@/lib/data/workspace";
+import { CURRENT_USER, NOTIFICATIONS } from "@/lib/data/workspace";
+import { BRAND_PROFILES, computeMonth, driversForBrand } from "@/lib/data/model";
+import { useWorkspace } from "@/lib/store";
+import { money, pct } from "@/lib/format";
 import { useTheme, type ThemeChoice } from "./ThemeProvider";
 import { useToast } from "./Toast";
 import { IconButton } from "@/components/ui/Button";
@@ -52,7 +55,7 @@ export function Topbar({
 }) {
   const [menu, setMenu] = useState<"brand" | "bell" | "user" | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const [brand, setBrand] = useState(BRANDS[0]);
+  const { brand, brandId, setBrandId, months } = useWorkspace();
   const [seen, setSeen] = useState(false);
   const { push } = useToast();
   const { choice, resolved, setChoice } = useTheme();
@@ -66,7 +69,7 @@ export function Topbar({
       setSyncing(false);
       push({
         title: "Sync complete",
-        body: "Shopify, Amazon and Meta reconciled for Aug 2026.",
+        body: `Shopify, Amazon and Meta reconciled for ${months[months.length - 1].label}.`,
         tone: "good",
       });
     }, 1600);
@@ -96,6 +99,7 @@ export function Topbar({
             </span>
             <span className="hidden min-w-0 sm:block">
               <span className="block truncate text-[13px] leading-tight font-semibold text-ink">{brand.name}</span>
+              <span className="block truncate text-[10.5px] leading-tight text-ink-4">{brand.category}</span>
             </span>
             <ChevronDown size={14} className={cn("shrink-0 text-ink-4 transition-transform", menu === "brand" && "rotate-180")} />
           </button>
@@ -103,29 +107,50 @@ export function Topbar({
           {menu === "brand" ? (
             <div className="anim-scale-in absolute top-full left-0 z-50 mt-1.5 w-64 origin-top-left rounded-lg border border-line bg-surface p-1.5 shadow-pop">
               <p className="label-xs px-2 py-1.5">Workspaces</p>
-              {BRANDS.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => {
-                    setBrand(b);
-                    setMenu(null);
-                    if (b.id !== brand.id) push({ title: `Switched to ${b.name}`, tone: "info", body: "Prototype: all workspaces show the same demo dataset." });
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors",
-                    b.id === brand.id ? "bg-brand-soft" : "hover:bg-surface-3",
-                  )}
-                >
-                  <span className="grid size-7 shrink-0 place-items-center rounded-md bg-brand text-[11px] font-bold text-white">
-                    {b.initials}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium text-ink">{b.name}</span>
-                    <span className="block text-[11px] text-ink-4">{b.plan} plan</span>
-                  </span>
-                  {b.id === brand.id ? <Check size={14} className="text-brand" /> : null}
-                </button>
-              ))}
+              {BRAND_PROFILES.map((b) => {
+                const latest = monthlySnapshot(b.id);
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => {
+                      setMenu(null);
+                      if (b.id !== brandId) {
+                        setBrandId(b.id);
+                        push({
+                          title: `Switched to ${b.name}`,
+                          body: b.headline,
+                          tone: "info",
+                        });
+                      }
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors",
+                      b.id === brandId ? "bg-brand-soft" : "hover:bg-surface-3",
+                    )}
+                  >
+                    <span className="grid size-7 shrink-0 place-items-center rounded-md bg-brand text-[11px] font-bold text-white">
+                      {b.initials}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-medium text-ink">{b.name}</span>
+                      <span className="block text-[11px] text-ink-4">
+                        {b.category} · {money(latest.revenue)} revenue
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span
+                        className={cn(
+                          "tnum block text-[11.5px] font-bold",
+                          latest.margin < 0 ? "text-critical-ink" : "text-good-ink",
+                        )}
+                      >
+                        {pct(latest.margin, 1)}
+                      </span>
+                      {b.id === brandId ? <Check size={13} className="ml-auto text-brand" /> : null}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ) : null}
         </div>
@@ -248,7 +273,7 @@ export function Topbar({
                       key={i.label}
                       onClick={() => {
                         setMenu(null);
-                        push({ title: `${i.label} is a demo action`, body: "Wire this to your auth provider — see Guide & setup.", tone: "info" });
+                        push({ title: `${i.label} is a demo action`, body: "Wire this to your auth provider. See Guide & setup.", tone: "info" });
                       }}
                       className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] text-ink-2 transition-colors hover:bg-surface-3 hover:text-ink"
                     >
@@ -264,6 +289,13 @@ export function Topbar({
       </div>
     </header>
   );
+}
+
+/** Headline figures for a workspace, so the switcher shows real differences. */
+function monthlySnapshot(id: string) {
+  const ms = driversForBrand(id).map(computeMonth);
+  const last = ms[ms.length - 1];
+  return { revenue: last.totalRevenue, margin: last.netMarginPct };
 }
 
 function ThemeSwitch({

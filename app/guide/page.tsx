@@ -158,7 +158,7 @@ export default function GuidePage() {
                 },
                 {
                   t: "Demo inputs",
-                  b: "The numbers feeding that function are authored, not fetched: 18 months of drivers, 16 SKUs and 58 input fields. There is no database, no API layer and no auth. Every workspace shows the same dataset.",
+                  b: "The numbers feeding that function are authored, not fetched: 24 months of drivers per brand, a 16-SKU catalogue and 58 input fields. There is no database, no API layer and no auth, and the three workspaces are generated from one base series rather than read from anywhere.",
                   tone: "warning" as const,
                 },
                 {
@@ -187,7 +187,7 @@ export default function GuidePage() {
             <Card>
               <CardHeader
                 title="Go-live roadmap"
-                subtitle="Five stages, in order. Tick items off as you go — progress is saved in this browser."
+                subtitle="Five stages, in order. Tick items off as you go. Progress is saved in this browser."
                 action={<Chip tone={progress === 100 ? "good" : "brand"}>{Math.round(progress)}% done</Chip>}
               />
               <div className="mt-4 space-y-4">
@@ -252,7 +252,7 @@ export default function GuidePage() {
             <Card>
               <CardHeader
                 title="Demo data inventory"
-                subtitle="Every place a number, name or action is fabricated — and what replaces it"
+                subtitle="Every place a number, name or action is fabricated, and what replaces it"
                 action={<Chip tone="warning">{MOCK_INVENTORY.length} items</Chip>}
               />
               <div className="mt-4 overflow-x-auto rounded-lg border border-line">
@@ -357,12 +357,12 @@ export async function GET(req: Request) {
     take: months,
   });
 
-  // Same pure function the prototype uses — nothing downstream changes.
+  // Same pure function the prototype uses, nothing downstream changes.
   return NextResponse.json(drivers.map(computeMonth));
 }`}
                 />
                 <CodeBlock
-                  label="lib/store.tsx — swap the source"
+                  label="lib/store.tsx (swap the source)"
                   code={`// Prototype:
 const months = useMemo(
   () => MONTH_DRIVERS.map((d) => computeMonth(applyOverride(d, overrides[d.key]))),
@@ -441,7 +441,7 @@ const months = useMemo(
               <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
                 <ol className="space-y-3">
                   <Step n={1} title="Install a provider">
-                    Auth.js v5 works cleanly with the App Router. Clerk or Supabase Auth are equally fine — the app
+                    Auth.js v5 works cleanly with the App Router. Clerk or Supabase Auth are equally fine. The app
                     only needs a session with a <code className="font-mono">workspaceId</code>.
                   </Step>
                   <Step n={2} title="Protect the shell">
@@ -491,7 +491,7 @@ export const config = {
             <Card>
               <CardHeader
                 title="Database"
-                subtitle="A workable schema. Orders are the grain — everything above them is an aggregation."
+                subtitle="A workable schema. Orders are the grain, everything above them is an aggregation."
                 action={<Chip tone="neutral">{DB_TABLES.length} tables</Chip>}
               />
               <div className="mt-4 overflow-x-auto rounded-lg border border-line">
@@ -524,7 +524,7 @@ export const config = {
                   Vercel Postgres, Neon and Supabase all work without configuration beyond{" "}
                   <code className="font-mono">DATABASE_URL</code>. Use a pooled connection for the app and{" "}
                   <code className="font-mono">DIRECT_URL</code> for migrations. Compute monthly drivers in a scheduled
-                  job rather than per request — the statement reads them thousands of times more often than they change.
+                  job rather than per request. The statement reads them thousands of times more often than they change.
                 </p>
               </div>
             </Card>
@@ -537,7 +537,7 @@ export const config = {
               <ul className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                 {[
                   { name: "Shopify", scopes: "read_orders, read_products, read_shipping", feeds: "Net sales, shipping income, gateway fees, order and refund volume", note: "Register orders/create, orders/updated and refunds/create webhooks so the month invalidates on change rather than on a timer." },
-                  { name: "Amazon Seller Central", scopes: "SP-API Finances, Reports", feeds: "Marketplace sales, referral and FBA fees, settlement adjustments", note: "Settlements arrive on a two-week cycle — reconcile retroactively and expect prior months to move." },
+                  { name: "Amazon Seller Central", scopes: "SP-API Finances, Reports", feeds: "Marketplace sales, referral and FBA fees, settlement adjustments", note: "Settlements arrive on a two-week cycle, reconcile retroactively and expect prior months to move." },
                   { name: "Meta Ads", scopes: "ads_read", feeds: "Paid media spend, impressions and clicks by campaign", note: "Pull nightly into a daily spend table. Blended CAC is derived from spend ÷ orders, not from platform-attributed purchases." },
                   { name: "Google Ads", scopes: "adwords", feeds: "Search and PMax spend by campaign", note: "Same daily spend table as Meta so blended CAC stays one number." },
                   { name: "Cost sheet", scopes: "Sheets API read", feeds: "Unit cost, packaging and courier rates", note: "The weakest link in most setups. Move to a PIM when unit cost starts changing more than monthly." },
@@ -583,7 +583,7 @@ export const config = {
                     build command, output directory and install command on their defaults.
                   </Step>
                   <Step n={4} title="Add environment variables">
-                    None are needed for the prototype — it builds and runs with zero configuration. Add them from the
+                    None are needed for the prototype, it builds and runs with zero configuration. Add them from the
                     section above as you connect each real source.
                   </Step>
                   <Step n={5} title="Deploy">
@@ -631,7 +631,7 @@ npm run typecheck`}
                   "Every figure traces to a source you can audit, not to a seeded constant",
                   "Manual overrides record who changed what, when, and from which value",
                   "Statement inputs are role-gated on the server, not only hidden in the UI",
-                  "Sync failures raise an alert — a stale number is worse than a missing one",
+                  "Sync failures raise an alert, a stale number is worse than a missing one",
                   "computeMonth() and attributeChange() are unit-tested against known statements",
                   "Prior months are locked once closed, or clearly marked when they move",
                   "Currency, timezone and fiscal-year start come from the workspace, not from constants",

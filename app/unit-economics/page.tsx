@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowUpDown, Download, Search } from "lucide-react";
 import { useWorkspace } from "@/lib/store";
-import { LOSING_SKUS, SKU_ROWS, TOTAL_SKU_LOSS, skuAction, type SkuRow } from "@/lib/data/skus";
+import { losingSkus, skuRowsFor, totalSkuLoss, skuAction, type SkuRow } from "@/lib/data/skus";
 import { CATEGORIES } from "@/lib/data/workspace";
 import { accounting, money, num, pct } from "@/lib/format";
 import { PageHeader, PageShell } from "@/components/shell/PageHeader";
@@ -17,31 +17,36 @@ import { PerOrderBar } from "@/components/charts/Misc";
 import { SkuScatter } from "@/components/charts/ScatterBubble";
 import { MiniBar } from "@/components/charts/MiniBar";
 import { ChartCard } from "@/components/charts/primitives";
+import { ChartInsight } from "@/components/charts/ChartInsight";
+import { perOrderInsight, skuInsight } from "@/lib/data/insights";
 import { useToast } from "@/components/shell/Toast";
 import { cn } from "@/lib/cn";
 
 type SortKey = "orders" | "aov" | "cogsPct" | "returnRate" | "cac" | "contributionPerOrder" | "totalContribution";
 
 export default function UnitEconomicsPage() {
-  const { current, previous, months } = useWorkspace();
+  const { current, comparison, months } = useWorkspace();
   const { push } = useToast();
   const [category, setCategory] = useState("All categories");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "totalContribution", dir: "asc" });
 
+  const skuRows = useMemo(() => skuRowsFor(current), [current]);
+  const losers = useMemo(() => losingSkus(skuRows), [skuRows]);
+  const skuLoss = useMemo(() => totalSkuLoss(skuRows), [skuRows]);
   const trail = months.slice(-12);
 
   const tiles = [
-    { label: "AOV", value: current.aov, prev: previous.aov, fmt: money, better: true, get: (m: typeof current) => m.aov },
-    { label: "COGS / order", value: current.cogsPerOrder, prev: previous.cogsPerOrder, fmt: money, better: false, get: (m: typeof current) => m.cogsPerOrder },
-    { label: "CAC", value: current.cac, prev: previous.cac, fmt: money, better: false, get: (m: typeof current) => m.cac },
-    { label: "Return rate", value: current.returnRate, prev: previous.returnRate, fmt: (v: number) => pct(v), better: false, mode: "pp" as const, get: (m: typeof current) => m.returnRate },
-    { label: "Contribution / order", value: current.contributionPerOrder, prev: previous.contributionPerOrder, fmt: money, better: true, get: (m: typeof current) => m.contributionPerOrder },
-    { label: "Contribution margin", value: current.contributionMarginPct, prev: previous.contributionMarginPct, fmt: (v: number) => pct(v), better: true, mode: "pp" as const, get: (m: typeof current) => m.contributionMarginPct },
+    { label: "AOV", value: current.aov, prev: comparison.aov, fmt: money, better: true, get: (m: typeof current) => m.aov },
+    { label: "COGS / order", value: current.cogsPerOrder, prev: comparison.cogsPerOrder, fmt: money, better: false, get: (m: typeof current) => m.cogsPerOrder },
+    { label: "CAC", value: current.cac, prev: comparison.cac, fmt: money, better: false, get: (m: typeof current) => m.cac },
+    { label: "Return rate", value: current.returnRate, prev: comparison.returnRate, fmt: (v: number) => pct(v), better: false, mode: "pp" as const, get: (m: typeof current) => m.returnRate },
+    { label: "Contribution / order", value: current.contributionPerOrder, prev: comparison.contributionPerOrder, fmt: money, better: true, get: (m: typeof current) => m.contributionPerOrder },
+    { label: "Contribution margin", value: current.contributionMarginPct, prev: comparison.contributionMarginPct, fmt: (v: number) => pct(v), better: true, mode: "pp" as const, get: (m: typeof current) => m.contributionMarginPct },
   ];
 
   const rows = useMemo(() => {
-    let out = SKU_ROWS.filter((s) => !s.isLongTail);
+    let out = skuRows.filter((s) => !s.isLongTail);
     if (category !== "All categories") out = out.filter((s) => s.category === category);
     if (query.trim()) out = out.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()));
     return [...out].sort((a, b) => {
@@ -49,7 +54,7 @@ export default function UnitEconomicsPage() {
       const bv = b[sort.key];
       return sort.dir === "asc" ? av - bv : bv - av;
     });
-  }, [category, query, sort]);
+  }, [skuRows, category, query, sort]);
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" }));
@@ -60,11 +65,11 @@ export default function UnitEconomicsPage() {
         eyebrow={
           <>
             <Chip tone="brand">{current.label}</Chip>
-            <Chip tone="critical">{LOSING_SKUS.length} SKUs below break-even</Chip>
+            <Chip tone="critical">{losers.length} SKUs below break-even</Chip>
           </>
         }
         title="Unit economics"
-        subtitle={`What one order actually earns, and which products are paying for themselves. ${LOSING_SKUS.length} of ${SKU_ROWS.length - 1} SKUs are contribution-negative, together costing ${money(Math.abs(TOTAL_SKU_LOSS))} this month.`}
+        subtitle={`What one order actually earns, and which products are paying for themselves. ${losers.length} of ${skuRows.length - 1} SKUs are contribution-negative, together costing ${money(Math.abs(skuLoss))} this month.`}
         actions={
           <Button
             icon={<Download size={14} />}
@@ -85,6 +90,7 @@ export default function UnitEconomicsPage() {
         <div className="mt-5">
           <PerOrderBar month={current} height={40} />
         </div>
+        <ChartInsight insight={perOrderInsight(current, comparison)} className="mt-4" />
         <div className="mt-5 grid grid-cols-2 gap-3 border-t border-line pt-4 sm:grid-cols-4">
           {[
             { k: "Contribution before overhead", v: money(current.contributionPerOrder), tone: current.contributionPerOrder >= 0 ? "good" : "bad" },
@@ -130,10 +136,11 @@ export default function UnitEconomicsPage() {
         <ChartCard
           title="SKU profitability"
           subtitle="Contribution per order against volume, sized by revenue. Anything below the line loses money on every sale."
-          info="Colour here is polarity, not identity — two poles with a neutral midpoint, which is why the categorical slot rules don't apply."
+          info="Colour here is polarity, not identity: two poles with a neutral midpoint, which is why the categorical slot rules don't apply."
+          insight={skuInsight(losers, skuLoss, current, skuRows.length)}
           table={{
             columns: ["SKU", "Orders", "Contribution / order", "Total contribution"],
-            rows: SKU_ROWS.filter((s) => !s.isLongTail).map((s) => [
+            rows: skuRows.filter((s) => !s.isLongTail).map((s) => [
               s.name,
               num(s.orders),
               money(s.contributionPerOrder),
@@ -141,18 +148,18 @@ export default function UnitEconomicsPage() {
             ]),
           }}
         >
-          <SkuScatter skus={SKU_ROWS} height={330} />
+          <SkuScatter skus={skuRows} height={330} />
         </ChartCard>
 
         <Card className="flex flex-col">
           <CardHeader
             title="Kill list"
-            subtitle={`${LOSING_SKUS.length} SKUs lost ${money(Math.abs(TOTAL_SKU_LOSS))} this month`}
+            subtitle={`${losers.length} SKUs lost ${money(Math.abs(skuLoss))} this month`}
             action={<Chip tone="critical">Action needed</Chip>}
           />
           <ul className="mt-3 divide-y divide-line-soft">
-            {LOSING_SKUS.map((s, i) => {
-              const action = skuAction(s);
+            {losers.map((s, i) => {
+              const action = skuAction(s, current);
               return (
                 <li key={s.id} className="flex items-center gap-3 py-2.5">
                   <span className="tnum w-4 shrink-0 text-[11px] font-semibold text-ink-4">{i + 1}</span>
@@ -168,7 +175,7 @@ export default function UnitEconomicsPage() {
                     <span className="tnum block text-[10.5px] text-ink-4">{money(s.totalContribution)} total</span>
                   </span>
                   <button
-                    onClick={() => push({ title: `${action}: ${s.name}`, body: "Actions are demo-only in the prototype — wire them to your catalogue and ad platforms.", tone: "info" })}
+                    onClick={() => push({ title: `${action}: ${s.name}`, body: "Actions are demo-only in the prototype. Wire them to your catalogue and ad platforms.", tone: "info" })}
                     className={cn(
                       "shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
                       action === "Discontinue"
@@ -252,7 +259,7 @@ export default function UnitEconomicsPage() {
             </thead>
             <tbody>
               {rows.map((s) => (
-                <SkuRowView key={s.id} sku={s} onAct={(a) => push({ title: `${a}: ${s.name}`, tone: "info" })} />
+                <SkuRowView key={s.id} sku={s} month={current} onAct={(a) => push({ title: `${a}: ${s.name}`, tone: "info" })} />
               ))}
             </tbody>
           </table>
@@ -262,9 +269,9 @@ export default function UnitEconomicsPage() {
   );
 }
 
-function SkuRowView({ sku, onAct }: { sku: SkuRow; onAct: (action: string) => void }) {
+function SkuRowView({ sku, month, onAct }: { sku: SkuRow; month: typeof import("@/lib/data/model").CURRENT; onAct: (action: string) => void }) {
   const negative = sku.totalContribution < 0;
-  const action = skuAction(sku);
+  const action = skuAction(sku, month);
   return (
     <tr className={cn("group transition-colors hover:bg-surface-2", negative && "bg-critical-soft/25")}>
       <th

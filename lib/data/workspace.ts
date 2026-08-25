@@ -2,7 +2,7 @@
  * Workspace content: the input schema behind the statement editor, plus the
  * alerts, saved views and org metadata the shell renders.
  *
- * ⚠️  PROTOTYPE DATA — see /guide. `EDITOR_SCHEMA` is the piece worth keeping:
+ * ⚠️  PROTOTYPE DATA. See /guide. `EDITOR_SCHEMA` is the piece worth keeping:
  *     its `bind` descriptors are how an edited rupee value is translated back
  *     into a model driver, which is what makes the prototype recalculate.
  */
@@ -68,7 +68,7 @@ export const EDITOR_SCHEMA: EditorTab[] = [
           { id: "shipping_income", label: "Shipping income", seed: 0, unit: "inr", source: "shopify", bind: { kind: "perOrder", driver: "shippingIncomePerOrder" }, help: "Delivery charges collected from customers." },
           { id: "gift_cards", label: "Gift card redemptions", seed: 41_200, unit: "inr", source: "shopify", bind: null },
           { id: "subscriptions", label: "Subscription revenue", seed: 68_400, unit: "inr", source: "shopify", bind: null },
-          { id: "taxes_collected", label: "Taxes collected", seed: null, unit: "inr", source: "manual", bind: null, help: "GST collected on orders. Pass-through — excluded from net profit." },
+          { id: "taxes_collected", label: "Taxes collected", seed: null, unit: "inr", source: "manual", bind: null, help: "GST collected on orders. Pass-through, excluded from net profit." },
         ],
       },
       {
@@ -272,7 +272,7 @@ export const ALERTS: Alert[] = [
   {
     id: "a2",
     title: "Return rate on Slides exceeded 9%",
-    detail: "Cloud Grey Slide is returning at 8.8% and Slide — Navy Blue at 10.1%. Sizing complaints account for 61% of return reasons.",
+    detail: "Cloud Grey Slide is returning at 8.8% and Slide - Navy Blue at 10.1%. Sizing complaints account for 61% of return reasons.",
     time: "Today · 09:15",
     severity: "warning",
     action: { label: "Inspect sizing issue", href: "/unit-economics" },
@@ -388,7 +388,7 @@ export const CELL_COMMENTS: CellComment[] = [
     monthKey: "2026-08",
     author: "Dev Raman",
     initials: "DR",
-    body: "Meta spend for the Independence Day push is booked here — worth splitting campaign-level next month.",
+    body: "Meta spend for the Independence Day push is booked here, worth splitting campaign-level next month.",
     time: "5h ago",
     resolved: false,
   },

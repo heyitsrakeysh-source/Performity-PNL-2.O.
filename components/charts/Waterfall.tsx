@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Waterfall — used for the profit bridge (revenue → net profit) and for
+ * Waterfall, used for the profit bridge (revenue → net profit) and for
  * driver attribution (last month's profit → this month's).
  *
  * Bars are diverging around a running total: contributions that add sit in

@@ -14,7 +14,7 @@ import {
 import { ALL_NAV_ITEMS } from "@/lib/nav";
 import { MONTHS } from "@/lib/data/model";
 import { SAVED_VIEWS } from "@/lib/data/workspace";
-import { SKU_ROWS } from "@/lib/data/skus";
+import { skuRowsFor } from "@/lib/data/skus";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { Kbd } from "@/components/ui/Bits";
@@ -73,7 +73,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         },
       }));
 
-    const skus: Command[] = SKU_ROWS.filter((s) => !s.isLongTail)
+    const skus: Command[] = skuRowsFor(MONTHS[MONTHS.length - 1])
+      .filter((s) => !s.isLongTail)
       .slice(0, 8)
       .map((s) => ({
         id: `sku-${s.id}`,
@@ -94,7 +95,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         hint: "Import a cost sheet",
         group: "Actions",
         icon: <Upload size={15} />,
-        run: () => push({ title: "Upload is a demo action", body: "Point this at your import endpoint — see Guide & setup.", tone: "info" }),
+        run: () => push({ title: "Upload is a demo action", body: "Point this at your import endpoint. See Guide & setup.", tone: "info" }),
       },
       {
         id: "act-export",

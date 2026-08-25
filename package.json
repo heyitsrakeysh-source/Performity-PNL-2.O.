@@ -2,7 +2,7 @@
   "name": "performity-pnl",
   "version": "2.0.0",
   "private": true,
-  "description": "Performity P&L 2.0 — a profitability intelligence platform for D2C brands.",
+  "description": "Performity P&L 2.0, a profitability intelligence platform for D2C brands.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

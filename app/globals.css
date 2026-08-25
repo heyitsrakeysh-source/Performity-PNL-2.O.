@@ -6,7 +6,7 @@
    PERFORMITY DESIGN TOKENS
    Light is the base scope; every token is redefined for [data-theme="dark"].
    Chart series colors are validated (OKLab CVD ΔE / lightness band / contrast)
-   against the surfaces below — see README "Data visualization system".
+   against the surfaces below. See README "Data visualization system".
    ========================================================================== */
 
 :root {
@@ -158,7 +158,7 @@
   --critical-ink: #f78d8d;
   --critical-soft: #2c1417;
 
-  /* categorical re-stepped for the dark surface (#12151f) — not a flip */
+  /* categorical re-stepped for the dark surface (#12151f), not a flip */
   --series-1: #7a76f0;
   --series-2: #dd6428;
   --series-3: #149c89;
@@ -474,7 +474,7 @@ body {
   animation: spin 900ms linear infinite;
 }
 
-/* Stagger helper — set --i on the child. */
+/* Stagger helper, set --i on the child. */
 .stagger > * {
   animation: fade-up 480ms var(--ease-out) both;
   animation-delay: calc(var(--i, 0) * 45ms);
@@ -539,7 +539,7 @@ body {
 }
 
 /* ============================================================================
-   PRINT — the board report route is designed to be printed to PDF
+   PRINT. The board report route is designed to be printed to PDF
    ========================================================================== */
 @media print {
   [data-print-hide] {
@@ -570,7 +570,7 @@ body {
 }
 
 /* ============================================================================
-   RANGE SLIDER — used by the what-if simulator.
+   RANGE SLIDER, used by the what-if simulator.
    The native input stays (keyboard + screen reader); the visible track is
    drawn behind it so the fill can run out from the centre in either direction.
    ========================================================================== */

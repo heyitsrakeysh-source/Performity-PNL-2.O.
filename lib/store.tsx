@@ -3,14 +3,17 @@
 /**
  * Workspace store.
  *
- * Holds the driver overrides produced by the statement editor and the
- * what-if simulator, recomputes the whole month series from them, and
- * exposes the filter state the pages read. Because every page derives from
- * `months`, editing one input updates every card, chart and table at once.
+ * The single place the product reads data from. It owns:
+ *   - which brand is active (each has its own driver series)
+ *   - the date range every chart and table is scoped to
+ *   - the comparison period every delta in the app is measured against
+ *   - driver overrides produced by the statement editor and the simulator
  *
- * ⚠️  PROTOTYPE: state lives in memory for the session. See /guide for where
- *     to swap this for a server fetch + mutation (React Query / server
- *     actions against your own API).
+ * Everything downstream derives from `months`, so changing a filter, switching
+ * brand or editing an input updates every figure at once.
+ *
+ * PROTOTYPE: state lives in memory for the session. See /guide for where to
+ * swap this for a server fetch plus mutations.
  */
 
 import {
@@ -23,21 +26,33 @@ import {
   type ReactNode,
 } from "react";
 import {
+  aggregateQuarters,
   computeMonth,
-  MONTH_DRIVERS,
   CURRENT_KEY,
+  DEFAULT_BRAND_ID,
+  driversForBrand,
+  brandProfile,
+  resolveRange,
+  type BrandProfile,
   type MonthDrivers,
   type MonthFigures,
   type MonthKey,
+  type QuarterFigures,
+  type RangePresetId,
 } from "./data/model";
-import { ALL_FIELDS, type Binding, type EditorField, type FlatField } from "./data/workspace";
+import { ALL_FIELDS, type Binding, type EditorField } from "./data/workspace";
 
 /* ============================================================================
  * Types
  * ==========================================================================*/
 
-export type Period = "3M" | "6M" | "12M" | "YTD";
 export type Granularity = "monthly" | "quarterly";
+export type CompareMode = "prev" | "prevQuarter" | "lastYear" | "custom";
+
+export interface DateRange {
+  from: MonthKey;
+  to: MonthKey;
+}
 
 export interface DriverOverride {
   netAov?: number;
@@ -52,30 +67,56 @@ export interface DriverOverride {
   fixed?: Partial<MonthDrivers["fixed"]>;
 }
 
-export type Overrides = Record<MonthKey, DriverOverride>;
-/** Manual inputs that have no model binding — tracked only for completeness. */
-export type ManualValues = Record<MonthKey, Record<string, number | null>>;
+type Overrides = Record<MonthKey, DriverOverride>;
+type ManualValues = Record<MonthKey, Record<string, number | null>>;
+
+export const COMPARE_MODES: { id: CompareMode; label: string; short: string }[] = [
+  { id: "prev", label: "Previous month", short: "MoM" },
+  { id: "prevQuarter", label: "Same month, previous quarter", short: "QoQ" },
+  { id: "lastYear", label: "Same month, last year", short: "YoY" },
+  { id: "custom", label: "A specific month", short: "Custom" },
+];
 
 interface WorkspaceValue {
+  /* --- brand --- */
+  brand: BrandProfile;
+  brandId: string;
+  setBrandId: (id: string) => void;
+
+  /* --- series --- */
   months: MonthFigures[];
   monthByKey: Map<MonthKey, MonthFigures>;
-  current: MonthFigures;
-  previous: MonthFigures;
   visibleMonths: MonthFigures[];
+  quarters: QuarterFigures[];
 
-  period: Period;
-  setPeriod: (p: Period) => void;
+  /** The month every headline figure describes: the last month in range. */
+  current: MonthFigures;
+  /** The period every delta is measured against. */
+  comparison: MonthFigures;
+  /** "vs Jan 2026" */
+  comparisonLabel: string;
+  /** The strongest month in range, for "best ever" style framing. */
+  bestMonth: MonthFigures;
+  worstMonth: MonthFigures;
+
+  /* --- filters --- */
+  range: DateRange;
+  setRange: (r: DateRange) => void;
+  rangePreset: RangePresetId;
+  setRangePreset: (p: RangePresetId) => void;
+  compareMode: CompareMode;
+  compareKey: MonthKey;
+  setCompareMode: (m: CompareMode) => void;
+  setCompareKey: (k: MonthKey) => void;
   granularity: Granularity;
   setGranularity: (g: Granularity) => void;
   channel: string;
   setChannel: (c: string) => void;
   isPending: boolean;
 
-  overrides: Overrides;
-  manualValues: ManualValues;
+  /* --- edits --- */
   fieldValue: (monthKey: MonthKey, field: EditorField) => number | null;
   commitEdits: (monthKey: MonthKey, changes: Record<string, number | null>) => void;
-  /** Recompute a month as if `draft` had been saved — used for live preview. */
   previewMonth: (monthKey: MonthKey, draft: Record<string, number | null>) => MonthFigures;
   resetMonth: (monthKey: MonthKey) => void;
   editedCount: number;
@@ -85,17 +126,16 @@ interface WorkspaceValue {
     filled: number;
     missing: number;
     pct: number;
-    missingFields: FlatField[];
+    missingFields: EditorField[];
   };
 }
 
 const WorkspaceContext = createContext<WorkspaceValue | null>(null);
 
 /* ============================================================================
- * Binding helpers — translate between a monthly rupee total and a driver
+ * Binding helpers: translate between a monthly rupee total and a driver
  * ==========================================================================*/
 
-/** The rupee total a bound field represents for a given month. */
 export function readBinding(bind: Binding, d: MonthDrivers): number | null {
   if (!bind) return null;
   if (bind.kind === "perOrder") {
@@ -109,7 +149,6 @@ export function readBinding(bind: Binding, d: MonthDrivers): number | null {
   return d.fixed[bind.part];
 }
 
-/** Fold an edited rupee total back into a driver override. */
 function writeBinding(bind: Binding, total: number, orders: number, into: DriverOverride) {
   if (!bind) return;
   if (bind.kind === "perOrder") {
@@ -124,21 +163,17 @@ function writeBinding(bind: Binding, total: number, orders: number, into: Driver
 function applyOverride(base: MonthDrivers, o: DriverOverride | undefined): MonthDrivers {
   if (!o) return base;
   const { fixed, ...rest } = o;
-  return {
-    ...base,
-    ...rest,
-    fixed: fixed ? { ...base.fixed, ...fixed } : base.fixed,
-  };
+  return { ...base, ...rest, fixed: fixed ? { ...base.fixed, ...fixed } : base.fixed };
 }
 
 /**
- * Deterministic stand-in for an input that a *closed* month would already
- * have. Prototype-only: in production these come from the database.
+ * Deterministic stand-in for an input a closed month would already have.
+ * Prototype only: in production these come from the database.
  */
 function closedMonthFiller(fieldId: string, revenue: number) {
   let h = 0;
   for (let i = 0; i < fieldId.length; i++) h = (h * 31 + fieldId.charCodeAt(i)) % 9973;
-  const share = 0.0008 + (h % 55) / 10000; // 0.08%–0.63% of revenue
+  const share = 0.0008 + (h % 55) / 10000;
   return Math.round((revenue * share) / 100) * 100;
 }
 
@@ -147,28 +182,70 @@ function closedMonthFiller(fieldId: string, revenue: number) {
  * ==========================================================================*/
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [overrides, setOverrides] = useState<Overrides>({});
-  const [manualValues, setManualValues] = useState<ManualValues>({});
-  const [period, setPeriodRaw] = useState<Period>("12M");
+  const [brandId, setBrandIdRaw] = useState(DEFAULT_BRAND_ID);
+  const [overridesByBrand, setOverridesByBrand] = useState<Record<string, Overrides>>({});
+  const [manualByBrand, setManualByBrand] = useState<Record<string, ManualValues>>({});
+
+  const [rangePreset, setRangePresetRaw] = useState<RangePresetId>("last12");
+  const [range, setRangeRaw] = useState<DateRange>(() => resolveRange("last12"));
+  const [compareMode, setCompareModeRaw] = useState<CompareMode>("prev");
+  const [customCompareKey, setCustomCompareKey] = useState<MonthKey | null>(null);
   const [granularity, setGranularityRaw] = useState<Granularity>("monthly");
   const [channel, setChannelRaw] = useState("all");
   const [isPending, startTransition] = useTransition();
 
+  const brand = brandProfile(brandId);
+  const overrides = overridesByBrand[brandId] ?? {};
+  const manualValues = manualByBrand[brandId] ?? {};
+
   const months = useMemo(
-    () => MONTH_DRIVERS.map((d) => computeMonth(applyOverride(d, overrides[d.key]))),
-    [overrides],
+    () => driversForBrand(brandId).map((d) => computeMonth(applyOverride(d, overrides[d.key]))),
+    [brandId, overrides],
   );
 
   const monthByKey = useMemo(() => new Map(months.map((m) => [m.key, m])), [months]);
-  const current = monthByKey.get(CURRENT_KEY)!;
-  const previous = months[months.length - 2];
 
   const visibleMonths = useMemo(() => {
-    const n = period === "3M" ? 3 : period === "6M" ? 6 : period === "12M" ? 12 : current.monthIndex + 1;
-    return months.slice(Math.max(0, months.length - n));
-  }, [months, period, current.monthIndex]);
+    const start = months.findIndex((m) => m.key === range.from);
+    const end = months.findIndex((m) => m.key === range.to);
+    if (start === -1 || end === -1 || end < start) return months.slice(-12);
+    return months.slice(start, end + 1);
+  }, [months, range]);
 
-  /* --- field access ---------------------------------------------------- */
+  const quarters = useMemo(() => aggregateQuarters(visibleMonths), [visibleMonths]);
+
+  const current = visibleMonths[visibleMonths.length - 1] ?? monthByKey.get(CURRENT_KEY) ?? months[months.length - 1];
+
+  /* --- comparison: an explicit month, resolvable from a preset ------------ */
+
+  const compareKey = useMemo(() => {
+    const idx = months.findIndex((m) => m.key === current.key);
+    const at = (offset: number) => months[Math.max(0, idx - offset)]?.key ?? months[0].key;
+    switch (compareMode) {
+      case "prev":
+        return at(1);
+      case "prevQuarter":
+        return at(3);
+      case "lastYear":
+        return at(12);
+      case "custom":
+        return customCompareKey && monthByKey.has(customCompareKey) ? customCompareKey : at(1);
+    }
+  }, [months, monthByKey, current.key, compareMode, customCompareKey]);
+
+  const comparison = monthByKey.get(compareKey) ?? months[0];
+  const comparisonLabel = `vs ${comparison.label}`;
+
+  const bestMonth = useMemo(
+    () => visibleMonths.reduce((a, b) => (b.netMarginPct > a.netMarginPct ? b : a), visibleMonths[0] ?? current),
+    [visibleMonths, current],
+  );
+  const worstMonth = useMemo(
+    () => visibleMonths.reduce((a, b) => (b.netMarginPct < a.netMarginPct ? b : a), visibleMonths[0] ?? current),
+    [visibleMonths, current],
+  );
+
+  /* --- field access ------------------------------------------------------ */
 
   const fieldValue = useCallback(
     (monthKey: MonthKey, field: EditorField): number | null => {
@@ -192,18 +269,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             return m.netSalesShopify;
         }
       }
-      // Closed months are complete: only the month in progress has gaps. A
-      // stable hash keeps the filled-in value identical on server and client.
-      if (field.seed === null && monthKey !== CURRENT_KEY) {
+      // Closed months are complete: only the month in progress has gaps.
+      if (field.seed === null && monthKey !== current.key) {
         const m = monthByKey.get(monthKey);
         return m ? closedMonthFiller(field.id, m.totalRevenue) : null;
       }
       return field.seed;
     },
-    [manualValues, monthByKey],
+    [manualValues, monthByKey, current.key],
   );
 
-  /* --- mutations ------------------------------------------------------- */
+  /* --- mutations --------------------------------------------------------- */
 
   const commitEdits = useCallback(
     (monthKey: MonthKey, changes: Record<string, number | null>) => {
@@ -218,34 +294,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         for (const [fieldId, value] of Object.entries(changes)) {
           const field = ALL_FIELDS.find((f) => f.id === fieldId);
           if (!field || field.readOnly) continue;
-          if (field.bind && value !== null) {
-            writeBinding(field.bind, value, orders, nextOverride);
-          } else {
-            nextManual[fieldId] = value;
-          }
+          if (field.bind && value !== null) writeBinding(field.bind, value, orders, nextOverride);
+          else nextManual[fieldId] = value;
         }
 
-        setOverrides((prev) => ({ ...prev, [monthKey]: nextOverride }));
-        setManualValues((prev) => ({ ...prev, [monthKey]: nextManual }));
+        setOverridesByBrand((prev) => ({
+          ...prev,
+          [brandId]: { ...(prev[brandId] ?? {}), [monthKey]: nextOverride },
+        }));
+        setManualByBrand((prev) => ({
+          ...prev,
+          [brandId]: { ...(prev[brandId] ?? {}), [monthKey]: nextManual },
+        }));
       });
     },
-    [monthByKey, overrides, manualValues],
+    [monthByKey, overrides, manualValues, brandId],
   );
-
-  const resetMonth = useCallback((monthKey: MonthKey) => {
-    startTransition(() => {
-      setOverrides((prev) => {
-        const next = { ...prev };
-        delete next[monthKey];
-        return next;
-      });
-      setManualValues((prev) => {
-        const next = { ...prev };
-        delete next[monthKey];
-        return next;
-      });
-    });
-  }, []);
 
   const previewMonth = useCallback(
     (monthKey: MonthKey, draft: Record<string, number | null>): MonthFigures => {
@@ -262,6 +326,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [monthByKey],
   );
 
+  const resetMonth = useCallback(
+    (monthKey: MonthKey) => {
+      startTransition(() => {
+        setOverridesByBrand((prev) => {
+          const forBrand = { ...(prev[brandId] ?? {}) };
+          delete forBrand[monthKey];
+          return { ...prev, [brandId]: forBrand };
+        });
+        setManualByBrand((prev) => {
+          const forBrand = { ...(prev[brandId] ?? {}) };
+          delete forBrand[monthKey];
+          return { ...prev, [brandId]: forBrand };
+        });
+      });
+    },
+    [brandId],
+  );
+
   const editedCount = useMemo(() => {
     let n = 0;
     for (const key of Object.keys(overrides)) {
@@ -275,38 +357,70 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return n;
   }, [overrides, manualValues]);
 
-  /* --- completeness ---------------------------------------------------- */
-
   const completeness = useMemo(() => {
-    const fields = ALL_FIELDS;
-    const missingFields = fields.filter((f) => fieldValue(CURRENT_KEY, f) === null);
-    const total = fields.length;
+    const missingFields = ALL_FIELDS.filter((f) => fieldValue(current.key, f) === null);
+    const total = ALL_FIELDS.length;
     const missing = missingFields.length;
-    const filled = total - missing;
-    return { total, filled, missing, pct: (filled / total) * 100, missingFields };
-  }, [fieldValue]);
+    return {
+      total,
+      filled: total - missing,
+      missing,
+      pct: ((total - missing) / total) * 100,
+      missingFields,
+    };
+  }, [fieldValue, current.key]);
 
-  /* --- filter setters run in a transition so charts hold their render --- */
+  /* --- setters ----------------------------------------------------------- */
 
-  const setPeriod = useCallback((p: Period) => startTransition(() => setPeriodRaw(p)), []);
+  const setBrandId = useCallback((id: string) => startTransition(() => setBrandIdRaw(id)), []);
+  const setRange = useCallback((r: DateRange) => {
+    startTransition(() => {
+      setRangeRaw(r);
+      setRangePresetRaw("custom");
+    });
+  }, []);
+  const setRangePreset = useCallback((p: RangePresetId) => {
+    startTransition(() => {
+      setRangePresetRaw(p);
+      if (p !== "custom") setRangeRaw(resolveRange(p));
+    });
+  }, []);
+  const setCompareMode = useCallback((m: CompareMode) => startTransition(() => setCompareModeRaw(m)), []);
+  const setCompareKey = useCallback((k: MonthKey) => {
+    startTransition(() => {
+      setCustomCompareKey(k);
+      setCompareModeRaw("custom");
+    });
+  }, []);
   const setGranularity = useCallback((g: Granularity) => startTransition(() => setGranularityRaw(g)), []);
   const setChannel = useCallback((c: string) => startTransition(() => setChannelRaw(c)), []);
 
   const value: WorkspaceValue = {
+    brand,
+    brandId,
+    setBrandId,
     months,
     monthByKey,
-    current,
-    previous,
     visibleMonths,
-    period,
-    setPeriod,
+    quarters,
+    current,
+    comparison,
+    comparisonLabel,
+    bestMonth,
+    worstMonth,
+    range,
+    setRange,
+    rangePreset,
+    setRangePreset,
+    compareMode,
+    compareKey,
+    setCompareMode,
+    setCompareKey,
     granularity,
     setGranularity,
     channel,
     setChannel,
     isPending,
-    overrides,
-    manualValues,
     fieldValue,
     commitEdits,
     previewMonth,

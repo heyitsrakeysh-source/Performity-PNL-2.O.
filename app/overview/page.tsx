@@ -1,18 +1,31 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock3 } from "lucide-react";
 import { useWorkspace } from "@/lib/store";
-import { buildInsights, profitBridge } from "@/lib/data/derived";
-import { money, moneyCompact, num, pct } from "@/lib/format";
+import { profitBridge } from "@/lib/data/derived";
+import {
+  explainProfitMove,
+  momInsight,
+  performanceInsight,
+  perOrderInsight,
+  profitBridgeInsight,
+  qoqInsight,
+  rupeeRulerInsight,
+} from "@/lib/data/insights";
+import { DEFAULT_TILE_IDS } from "@/lib/data/metrics";
+import { money, num, pct } from "@/lib/format";
 import { PageHeader, PageShell } from "@/components/shell/PageHeader";
 import { FilterBar } from "@/components/shell/FilterBar";
 import { CompletenessStrip } from "@/components/pnl/CompletenessStrip";
-import { KpiCard } from "@/components/pnl/KpiCard";
-import { InsightsList } from "@/components/pnl/InsightsList";
+import { MetricTile, useTileChoice } from "@/components/pnl/MetricTile";
+import { PeriodComparison } from "@/components/pnl/PeriodComparison";
 import { StatementTable } from "@/components/pnl/StatementTable";
 import { ChartCard } from "@/components/charts/primitives";
+import { ChartInsight } from "@/components/charts/ChartInsight";
 import { PerformancePanels } from "@/components/charts/PerformancePanels";
+import { QuarterBars } from "@/components/charts/QuarterBars";
 import { RupeeRuler } from "@/components/charts/RupeeRuler";
 import { Waterfall } from "@/components/charts/Waterfall";
 import { MarginGauge, PerOrderBar } from "@/components/charts/Misc";
@@ -21,18 +34,35 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 
 export default function OverviewPage() {
-  const { current, previous, visibleMonths, months, isPending } = useWorkspace();
+  const {
+    brand,
+    current,
+    comparison,
+    comparisonLabel,
+    bestMonth,
+    visibleMonths,
+    quarters,
+    isPending,
+  } = useWorkspace();
 
-  const insights = buildInsights(previous, current);
+  const { ids, setAt } = useTileChoice(DEFAULT_TILE_IDS);
   const bridge = profitBridge(current);
-  const trail = (fn: (m: typeof current) => number) => months.slice(-12).map(fn);
+
+  const why = useMemo(
+    () => explainProfitMove(current, comparison, bestMonth),
+    [current, comparison, bestMonth],
+  );
+
+  const prevQuarter = quarters.length > 1 ? quarters[quarters.length - 2] : undefined;
+  const lastQuarter = quarters[quarters.length - 1];
 
   return (
     <PageShell>
       <PageHeader
         eyebrow={
           <>
-            <Chip tone="brand">{current.label}</Chip>
+            <Chip tone="brand">{brand.name}</Chip>
+            <Chip tone="neutral">{current.label}</Chip>
             <StatusBadge status="warning" label="Month in progress · day 24 of 31" />
             <span className="inline-flex items-center gap-1 text-[11.5px] text-ink-4">
               <Clock3 size={12} /> synced 12 minutes ago
@@ -42,11 +72,12 @@ export default function OverviewPage() {
         title="Profit overview"
         subtitle={
           <>
-            {current.orders.toLocaleString("en-IN")} orders brought in {money(current.totalRevenue)} and kept{" "}
+            {num(current.orders)} orders brought in {money(current.totalRevenue)} and kept{" "}
             <strong className={current.netProfit < 0 ? "text-critical-ink" : "text-good-ink"}>
               {money(current.netProfit)}
             </strong>
-            . Every figure below is derived from one reconciling model — sub-lines always foot to their totals.
+            . Every figure below is derived from one reconciling model and is scoped to the period and comparison
+            you pick in the filter bar.
           </>
         }
         actions={
@@ -60,58 +91,25 @@ export default function OverviewPage() {
         }
       />
 
-      {/* ---------------------------------------------------------- KPIs --- */}
-      <div className="stagger mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
-        <KpiCard
-          index={0}
-          label="Total revenue"
-          value={current.totalRevenue}
-          previous={previous.totalRevenue}
-          format={(v) => moneyCompact(v)}
-          series={trail((m) => m.totalRevenue)}
-          color="var(--brand)"
-          info="Net sales plus shipping income, after returns and discounts."
-          footnote={`${num(current.orders)} orders at ${money(current.aov)} AOV`}
-        />
-        <KpiCard
-          index={1}
-          label="Gross profit"
-          value={current.grossProfit}
-          previous={previous.grossProfit}
-          format={(v) => moneyCompact(v)}
-          series={trail((m) => m.grossProfit)}
-          color="var(--series-3)"
-          info="Revenue less cost of goods sold."
-          footnote={`${pct(current.grossMarginPct)} gross margin`}
-        />
-        <KpiCard
-          index={2}
-          label="Marketing spend"
-          value={current.totalMarketing}
-          previous={previous.totalMarketing}
-          higherIsBetter={false}
-          format={(v) => moneyCompact(v)}
-          series={trail((m) => m.totalMarketing)}
-          color="var(--series-5)"
-          info="Paid media plus retainers and production."
-          footnote={`ROAS ${current.roas.toFixed(2)} against break-even ${current.breakEvenRoas.toFixed(2)}`}
-        />
-        <KpiCard
-          index={3}
-          label="Net profit"
-          value={current.netProfit}
-          previous={previous.netProfit}
-          format={(v) => money(v)}
-          series={trail((m) => m.netProfit)}
-          color={current.netProfit >= 0 ? "var(--good)" : "var(--critical)"}
-          emphasis
-          info="What is left after every cost, including fixed overhead."
-          footnote={`${money(Math.abs(current.netProfit - previous.netProfit))} ${current.netProfit < previous.netProfit ? "worse" : "better"} than ${previous.label}`}
-          href="/story"
-        />
+      {/* ------------------------------------------------ the one-line why --- */}
+      <ChartInsight insight={why} className="mt-5" />
 
-        {/* Margin against its break-even reference. Spans the row below 2xl so
-            the tile grid never leaves a hole. */}
+      {/* ------------------------------------------------- configurable KPIs --- */}
+      <div className={cn("stagger mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5", isPending && "is-pending")}>
+        {ids.map((id, i) => (
+          <MetricTile
+            key={`${id}-${i}`}
+            index={i}
+            metricId={id}
+            onChangeMetric={(next) => setAt(i, next)}
+            current={current}
+            comparison={comparison}
+            comparisonLabel={comparisonLabel}
+            series={visibleMonths}
+            taken={ids}
+          />
+        ))}
+
         <Card className="sm:col-span-2 lg:col-span-4 2xl:col-span-1" interactive>
           <div className="flex flex-row items-center gap-5 2xl:flex-col 2xl:gap-1">
             <div className="2xl:w-full">
@@ -119,25 +117,23 @@ export default function OverviewPage() {
             </div>
             <MarginGauge value={current.netMarginPct} min={-3} max={6} target={0} size={132} label="break-even at 0%" />
             <p className="max-w-[190px] text-[11.5px] leading-snug text-ink-3 2xl:mt-2 2xl:max-w-none 2xl:text-center">
-              <strong className={current.netMarginPct < 0 ? "text-critical-ink" : "text-good-ink"}>
-                {Math.abs(current.netMarginPct - previous.netMarginPct).toFixed(2)}pp{" "}
-                {current.netMarginPct < previous.netMarginPct ? "down" : "up"}
+              <strong className={current.netMarginPct < comparison.netMarginPct ? "text-critical-ink" : "text-good-ink"}>
+                {pct(Math.abs(current.netMarginPct - comparison.netMarginPct), 2)}{" "}
+                {current.netMarginPct < comparison.netMarginPct ? "down" : "up"}
               </strong>{" "}
-              on {pct(previous.netMarginPct, 2)} last month
+              on {pct(comparison.netMarginPct, 2)} in {comparison.label}
             </p>
 
-            {/* Only shown while the card is spanning the row — keeps the
-                narrow 2xl tile uncluttered. */}
             <dl className="ml-auto hidden gap-8 sm:flex 2xl:hidden">
               {[
-                { k: "Break-even ROAS", v: current.breakEvenRoas.toFixed(2), n: `running ${current.roas.toFixed(2)}` },
+                { k: "Break-even ROAS", v: current.breakEvenRoas.toFixed(2) + "x", n: `running ${current.roas.toFixed(2)}x` },
                 { k: "Contribution / order", v: money(current.contributionPerOrder), n: `less ${money(current.fixedPerOrder)} overhead` },
                 { k: "Net per order", v: money(current.netProfit / current.orders), n: `${num(current.orders)} orders` },
-              ].map((s2) => (
-                <div key={s2.k}>
-                  <dt className="text-[11px] font-medium text-ink-4">{s2.k}</dt>
-                  <dd className="figure-lg mt-0.5 text-[17px] text-ink">{s2.v}</dd>
-                  <dd className="text-[10.5px] text-ink-4">{s2.n}</dd>
+              ].map((s) => (
+                <div key={s.k}>
+                  <dt className="text-[11px] font-medium text-ink-4">{s.k}</dt>
+                  <dd className="figure-lg mt-0.5 text-[17px] text-ink">{s.v}</dd>
+                  <dd className="text-[10.5px] text-ink-4">{s.n}</dd>
                 </div>
               ))}
             </dl>
@@ -145,19 +141,19 @@ export default function OverviewPage() {
         </Card>
       </div>
 
-      {/* ------------------------------------------------ filters + health --- */}
       <div className="mt-4 space-y-3">
         <FilterBar />
         <CompletenessStrip />
       </div>
 
       {/* --------------------------------------------------------- charts --- */}
-      <div className={cn("mt-4 grid grid-cols-1 gap-3 xl:grid-cols-3", isPending && "is-pending")}>
+      <div className={cn("mt-4 grid grid-cols-1 items-start gap-3 xl:grid-cols-3", isPending && "is-pending")}>
         <ChartCard
           className="xl:col-span-2"
           title="Performance over time"
           subtitle="Cost stack against the revenue it has to fit inside, with net profit on its own scale below."
           info="Two panels rather than two y-axes: a single plot with two scales invents a relationship the data does not contain."
+          insight={performanceInsight(visibleMonths, comparison)}
           table={{
             columns: ["Month", "Revenue", "COGS", "Operations", "Marketing", "Net profit"],
             rows: visibleMonths.map((m) => [
@@ -175,17 +171,93 @@ export default function OverviewPage() {
 
         <ChartCard
           title="Where your rupee goes"
-          subtitle={`Every ₹100 of ${current.label} revenue, and how last month compares.`}
+          subtitle={`${current.label} against ${comparison.label}`}
           info="Segments are labelled directly so the composition is readable without hovering, and the marker shows where spending crossed the revenue line."
+          insight={rupeeRulerInsight(current, comparison)}
         >
-          <RupeeRuler current={current} previous={previous} />
+          <RupeeRuler current={current} comparison={comparison} />
         </ChartCard>
       </div>
 
-      <div className={cn("mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3", isPending && "is-pending")}>
+      {/* ------------------------------------------- period on period ------- */}
+      <Card className="mt-3">
+        <CardHeader
+          title={`${current.label} against ${comparison.label}`}
+          subtitle="Every headline metric, side by side, with the size of each movement"
+          action={<Chip tone="brand">{comparisonLabel}</Chip>}
+        />
+        <div className="mt-4">
+          <PeriodComparison
+            current={current}
+            comparison={comparison}
+            currentLabel={current.label}
+            comparisonLabel={comparison.label}
+          />
+        </div>
+        <ChartInsight insight={momInsight(current, comparison)} className="mt-3.5" />
+      </Card>
+
+      {/* ------------------------------------------------ quarter on quarter --- */}
+      <div className={cn("mt-3 grid grid-cols-1 items-start gap-3 xl:grid-cols-[1.4fr_1fr]", isPending && "is-pending")}>
+        <ChartCard
+          title="Quarter on quarter"
+          subtitle="Months in range rolled into quarters. Rates are recomputed from the totals, not averaged."
+          insight={qoqInsight(quarters)}
+          table={{
+            columns: ["Quarter", "Revenue", "COGS", "Marketing", "Net profit", "Margin"],
+            rows: quarters.map((q) => [
+              `${q.label}${q.partial ? " (partial)" : ""}`,
+              money(q.totalRevenue),
+              money(q.cogs),
+              money(q.totalMarketing),
+              money(q.netProfit),
+              pct(q.netMarginPct, 2),
+            ]),
+          }}
+        >
+          <QuarterBars quarters={quarters} />
+        </ChartCard>
+
+        <Card className="flex flex-col">
+          <CardHeader
+            title="Latest quarter"
+            subtitle={
+              prevQuarter
+                ? `${lastQuarter?.label} against ${prevQuarter.label}`
+                : "Widen the range to compare two quarters"
+            }
+          />
+          {prevQuarter && lastQuarter ? (
+            <div className="mt-4">
+              {lastQuarter.months.length !== prevQuarter.months.length ? (
+                <p className="mb-2.5 rounded-md bg-warning-soft px-2.5 py-1.5 text-[11.5px] font-medium text-warning-ink">
+                  {lastQuarter.label} covers {lastQuarter.months.length} of 3 months against{" "}
+                  {prevQuarter.months.length} in {prevQuarter.label}, so totals are not like for like.
+                </p>
+              ) : null}
+              <PeriodComparison
+                current={lastQuarter}
+                comparison={prevQuarter}
+                currentLabel={lastQuarter.label}
+                comparisonLabel={prevQuarter.label}
+                rowIds={["revenue", "grossProfit", "marketing", "netProfit", "netMargin", "cac"]}
+              />
+            </div>
+          ) : (
+            <p className="mt-4 text-[12.5px] text-ink-3">
+              Only {quarters.length} quarter is in range. Pick a longer period to see a quarter-on-quarter
+              comparison.
+            </p>
+          )}
+        </Card>
+      </div>
+
+      {/* ------------------------------------------------- bridge + per order --- */}
+      <div className={cn("mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2", isPending && "is-pending")}>
         <ChartCard
           title="Profit bridge"
           subtitle={`${current.label} revenue down to net profit`}
+          insight={profitBridgeInsight(current)}
           table={{
             columns: ["Step", "Amount"],
             rows: bridge.map((b) => [b.label, money(b.value)]),
@@ -197,42 +269,27 @@ export default function OverviewPage() {
               value: b.value,
               kind: b.kind === "cost" ? "delta" : "anchor",
             }))}
-            height={230}
+            height={240}
           />
         </ChartCard>
 
-        <Card className="flex flex-col">
-          <CardHeader
-            title="What the numbers say"
-            subtitle="Generated from this month's movement"
-            action={
-              <Link href="/story" className="text-[12px] font-medium text-brand-ink hover:underline">
-                Full story
-              </Link>
-            }
-          />
-          <div className="mt-3 flex-1">
-            <InsightsList insights={insights.slice(0, 3)} />
-          </div>
-        </Card>
-
-        <Card className="flex flex-col">
-          <CardHeader
-            title="Unit economics"
-            subtitle={`An average ${money(current.aov)} order, broken down`}
-            info="Contribution is what is left of one order after goods, fulfilment, fees and acquisition — before fixed overhead."
-            action={
-              <Link href="/unit-economics" className="text-[12px] font-medium text-brand-ink hover:underline">
-                Detail
-              </Link>
-            }
-          />
-          <div className="mt-4">
+        <ChartCard
+          title="Unit economics"
+          subtitle={`An average ${money(current.aov)} order, broken down`}
+          info="Contribution is what is left of one order after goods, fulfilment, fees and acquisition, before fixed overhead."
+          insight={perOrderInsight(current, comparison)}
+          action={
+            <Link href="/unit-economics" className="text-[12px] font-medium text-brand-ink hover:underline">
+              Detail
+            </Link>
+          }
+        >
+          <div className="pt-1">
             <PerOrderBar month={current} />
           </div>
           <dl className="mt-5 space-y-2 border-t border-line pt-4 text-[12px]">
             {[
-              { k: "Break-even ROAS", v: current.breakEvenRoas.toFixed(2), note: `running ${current.roas.toFixed(2)}` },
+              { k: "Break-even ROAS", v: `${current.breakEvenRoas.toFixed(2)}x`, note: `running ${current.roas.toFixed(2)}x` },
               { k: "Return rate", v: pct(current.returnRate), note: `${num(Math.round((current.returnRate / 100) * current.orders))} orders back` },
               { k: "Break-even CAC", v: money(current.breakEvenCac), note: `running ${money(current.cac)}` },
             ].map((r) => (
@@ -245,34 +302,14 @@ export default function OverviewPage() {
               </div>
             ))}
           </dl>
-
-          <div className="mt-auto grid grid-cols-3 gap-2 pt-4">
-            {[
-              { label: "Contribution", value: money(current.contributionPerOrder), tone: current.contributionPerOrder >= 0 ? "good" : "bad" },
-              { label: "Fixed / order", value: money(current.fixedPerOrder), tone: "neutral" },
-              { label: "Net / order", value: money(current.netProfit / current.orders), tone: current.netProfit >= 0 ? "good" : "bad" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-md border border-line bg-surface-2 px-2.5 py-2">
-                <p className="text-[10.5px] font-medium text-ink-4">{s.label}</p>
-                <p
-                  className={cn(
-                    "tnum mt-0.5 text-[14px] font-bold",
-                    s.tone === "good" ? "text-good-ink" : s.tone === "bad" ? "text-critical-ink" : "text-ink",
-                  )}
-                >
-                  {s.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Card>
+        </ChartCard>
       </div>
 
       {/* ------------------------------------------------------ statement --- */}
       <Card className="mt-3" padded>
         <CardHeader
           title="P&L summary"
-          subtitle={`${visibleMonths[0]?.label} — ${current.label}`}
+          subtitle={`${visibleMonths[0]?.label} to ${current.label}`}
           action={
             <Link
               href="/statement"

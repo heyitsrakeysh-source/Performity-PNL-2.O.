@@ -23,9 +23,9 @@ export const STAGES: GuideStage[] = [
     title: "1 · Replace the demo dataset",
     summary: "Everything the product renders comes from four files. Swap them for real reads and the whole UI follows.",
     tasks: [
-      { id: "t-model", label: "Point the driver series at your warehouse", detail: "Replace MONTH_DRIVERS in lib/data/model.ts with a query. Keep computeMonth() — it is the calculation contract the UI is written against.", effort: "M" },
+      { id: "t-model", label: "Point the driver series at your warehouse", detail: "Replace MONTH_DRIVERS in lib/data/model.ts with a query. Keep computeMonth(), it is the calculation contract the UI is written against.", effort: "M" },
       { id: "t-skus", label: "Aggregate SKU economics from orders", detail: "lib/data/skus.ts currently holds 16 seeded SKUs plus a residual row. Replace with a per-SKU roll-up; keep the invariant that SKU orders sum to the month's orders.", effort: "M" },
-      { id: "t-inputs", label: "Persist manual inputs", detail: "EDITOR_SCHEMA in lib/data/workspace.ts defines the input tree. Values currently live in React state — move them to a monthly_inputs table.", effort: "M" },
+      { id: "t-inputs", label: "Persist manual inputs", detail: "EDITOR_SCHEMA in lib/data/workspace.ts defines the input tree. Values currently live in React state, move them to a monthly_inputs table.", effort: "M" },
       { id: "t-content", label: "Replace org and alert content", detail: "BRANDS, CURRENT_USER, NOTIFICATIONS, ALERTS, SAVED_VIEWS and CELL_COMMENTS are all seeded literals in lib/data/workspace.ts.", effort: "S" },
     ],
   },
@@ -67,7 +67,7 @@ export const STAGES: GuideStage[] = [
     summary: "What stands between a good demo and something you can put a customer on.",
     tasks: [
       { id: "t-error", label: "Error and empty states", detail: "Charts assume data exists. Add loading, empty and failure states for every fetch.", effort: "M" },
-      { id: "t-tests", label: "Test the calculation layer", detail: "computeMonth() and attributeChange() are pure functions — unit test them against known statements before anyone relies on the output.", effort: "M" },
+      { id: "t-tests", label: "Test the calculation layer", detail: "computeMonth() and attributeChange() are pure functions. Unit test them against known statements before anyone relies on the output.", effort: "M" },
       { id: "t-obs", label: "Monitoring and analytics", detail: "Vercel Analytics plus an error tracker. Alert on sync failures, not just app errors.", effort: "S" },
       { id: "t-a11y", label: "Accessibility audit", detail: "Charts ship with table twins, keyboard focus and ARIA labels. Re-verify after you change the data layer.", effort: "S" },
     ],
@@ -121,8 +121,8 @@ export const API_ROUTES: ApiRoute[] = [
   { method: "PUT", path: "/api/preferences", purpose: "Update which orders enter the statement.", returns: "CalculationPreferences", replaces: "local useState in the same component" },
   { method: "GET", path: "/api/alerts", purpose: "Guardrail breaches and sync notices.", returns: "Alert[]", replaces: "ALERTS in lib/data/workspace.ts" },
   { method: "POST", path: "/api/sync", purpose: "Kick a full re-pull from every connected source.", returns: "{ jobId }", replaces: "the fake timeout in components/shell/Topbar.tsx" },
-  { method: "POST", path: "/api/webhooks/shopify", purpose: "Receive order and refund events; invalidate the month cache.", returns: "204", replaces: "nothing — new" },
-  { method: "GET", path: "/api/cron/nightly", purpose: "Scheduled sync, protected by CRON_SECRET.", returns: "{ ok }", replaces: "nothing — new" },
+  { method: "POST", path: "/api/webhooks/shopify", purpose: "Receive order and refund events; invalidate the month cache.", returns: "204", replaces: "nothing, new" },
+  { method: "GET", path: "/api/cron/nightly", purpose: "Scheduled sync, protected by CRON_SECRET.", returns: "{ ok }", replaces: "nothing, new" },
   { method: "POST", path: "/api/reports/board", purpose: "Render and email the monthly board pack.", returns: "{ url }", replaces: "window.print() on the reports page" },
 ];
 
@@ -134,9 +134,11 @@ export interface MockItem {
 }
 
 export const MOCK_INVENTORY: MockItem[] = [
-  { area: "Financial model", file: "lib/data/model.ts", what: "18 months of hand-authored drivers, tuned so August lands on a small loss.", action: "Replace MONTH_DRIVERS with a query. Keep computeMonth() unchanged." },
-  { area: "SKU economics", file: "lib/data/skus.ts", what: "16 seeded SKUs plus a computed long-tail row that absorbs the residual.", action: "Replace with a per-SKU aggregation over orders and ad spend." },
-  { area: "Input schema", file: "lib/data/workspace.ts", what: "EDITOR_SCHEMA — 58 input fields, 12 of them deliberately blank to demo the completeness meter.", action: "Keep the schema; move values into the database." },
+  { area: "Financial model", file: "lib/data/model.ts", what: "24 months of hand-authored drivers, tuned so August lands on a small loss.", action: "Replace ANCHORS with a query. Keep computeMonth() unchanged." },
+  { area: "Workspaces", file: "lib/data/model.ts", what: "BRAND_PROFILES generates all three brands from one base series using multipliers.", action: "Read each workspace's own drivers instead of scaling a shared series." },
+  { area: "Insights", file: "lib/data/insights.ts", what: "Sentences are computed from the live model, but the phrasing and thresholds are authored.", action: "Keep as-is, or route through an LLM once the numbers are real." },
+  { area: "SKU economics", file: "lib/data/skus.ts", what: "16 seeded SKUs, rescaled to the active month, plus a long-tail row that absorbs the residual.", action: "Replace skuRowsFor() with a per-SKU aggregation over orders and ad spend." },
+  { area: "Input schema", file: "lib/data/workspace.ts", what: "EDITOR_SCHEMA, 58 input fields, 12 of them deliberately blank to demo the completeness meter.", action: "Keep the schema; move values into the database." },
   { area: "Org and people", file: "lib/data/workspace.ts", what: "BRANDS, CURRENT_USER, NOTIFICATIONS, CELL_COMMENTS.", action: "Read from your auth provider and a comments table." },
   { area: "Alerts", file: "lib/data/workspace.ts", what: "Four static alerts.", action: "Generate from guardrail rules evaluated on sync." },
   { area: "Benchmarks", file: "lib/data/derived.ts", what: "Peer medians in benchmarks() are illustrative constants.", action: "Source from a benchmarking dataset, or remove the card." },
@@ -159,7 +161,7 @@ export const DB_TABLES: DbTable[] = [
   { name: "users", purpose: "People with access, joined to workspaces through memberships.", columns: "id, email, name, avatar_url, created_at" },
   { name: "memberships", purpose: "Role of a user within a workspace.", columns: "user_id, workspace_id, role (owner|finance|analyst|viewer)" },
   { name: "integrations", purpose: "Connected sources and their credentials.", columns: "id, workspace_id, provider, status, credentials (encrypted), last_synced_at" },
-  { name: "orders", purpose: "Normalised orders across channels — the grain everything rolls up from.", columns: "id, workspace_id, channel, external_id, placed_at, status, gross_amount, discount, refund, shipping_income, payment_method" },
+  { name: "orders", purpose: "Normalised orders across channels. The grain everything rolls up from.", columns: "id, workspace_id, channel, external_id, placed_at, status, gross_amount, discount, refund, shipping_income, payment_method" },
   { name: "order_items", purpose: "Line items, so SKU economics can be aggregated.", columns: "id, order_id, sku, quantity, unit_price, unit_cost" },
   { name: "ad_spend", purpose: "Daily spend by platform and campaign.", columns: "id, workspace_id, platform, campaign_id, date, spend, impressions, clicks" },
   { name: "monthly_inputs", purpose: "Manual values entered in the statement drawer.", columns: "id, workspace_id, period (YYYY-MM), field_id, value, source, entered_by, entered_at" },

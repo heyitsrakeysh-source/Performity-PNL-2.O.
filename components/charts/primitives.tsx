@@ -22,6 +22,8 @@ import {
 import { BarChart3, Table2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CardHeader } from "@/components/ui/Card";
+import { ChartInsight } from "./ChartInsight";
+import type { Insight } from "@/lib/data/insights";
 
 /* ============================================================================
  * Measurement
@@ -29,7 +31,7 @@ import { CardHeader } from "@/components/ui/Card";
 
 /**
  * Measures the container before paint, so the chart renders at its true width
- * on the first frame — no resize flash, no layout shift.
+ * on the first frame. No resize flash, no layout shift.
  */
 export function useMeasure<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -67,7 +69,7 @@ export function linearScale(domain: [number, number], range: [number, number]) {
 }
 
 /**
- * "Nice" axis bounds and ticks — round numbers, always including zero when the
+ * "Nice" axis bounds and ticks, round numbers, always including zero when the
  * data straddles it, so the baseline is meaningful.
  */
 export function niceScale(min: number, max: number, count = 4) {
@@ -87,7 +89,7 @@ export function niceScale(min: number, max: number, count = 4) {
   return { min: niceMin, max: niceMax, ticks };
 }
 
-/** Rectangle with selective corner rounding — used for bar data-ends. */
+/** Rectangle with selective corner rounding. Used for bar data-ends. */
 export function barPath(
   x: number,
   y: number,
@@ -110,7 +112,7 @@ export function barPath(
   return `M${x + rr},${y}h${w - 2 * rr}a${rr},${rr} 0 0 1 ${rr},${rr}v${h - 2 * rr}a${rr},${rr} 0 0 1 ${-rr},${rr}h${-(w - 2 * rr)}a${rr},${rr} 0 0 1 ${-rr},${-rr}v${-(h - 2 * rr)}a${rr},${rr} 0 0 1 ${rr},${-rr}Z`;
 }
 
-/** Catmull–Rom smoothing, converted to cubic béziers. Keeps lines honest. */
+/** Catmull-Rom smoothing, converted to cubic béziers. Keeps lines honest. */
 export function smoothPath(points: [number, number][], tension = 0.32) {
   if (points.length < 2) return "";
   let d = `M${points[0][0]},${points[0][1]}`;
@@ -220,7 +222,7 @@ export function XLabels({
 }
 
 /* ============================================================================
- * Legend — always present for two or more series
+ * Legend, always present for two or more series
  * ==========================================================================*/
 
 export interface LegendItem {
@@ -342,7 +344,7 @@ export function ChartTooltip({ tip, containerWidth }: { tip: TooltipState | null
 }
 
 /* ============================================================================
- * ChartCard — chart / table twin
+ * ChartCard, chart / table twin
  * ==========================================================================*/
 
 export interface TableTwin {
@@ -362,6 +364,7 @@ export function ChartCard({
   className,
   bodyClassName,
   footer,
+  insight,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -373,6 +376,8 @@ export function ChartCard({
   className?: string;
   bodyClassName?: string;
   footer?: ReactNode;
+  /** A computed sentence explaining what this chart is showing. */
+  insight?: Insight;
 }) {
   const [view, setView] = useState<"chart" | "table">("chart");
 
@@ -430,6 +435,7 @@ export function ChartCard({
         ) : null}
       </div>
 
+      {insight ? <ChartInsight insight={insight} className="mt-3.5" /> : null}
       {footer ? <div className="mt-3">{footer}</div> : null}
     </section>
   );

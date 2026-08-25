@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Calculation preferences — which orders count toward the statement.
+ * Calculation preferences, which orders count toward the statement.
  * Carried over from the original tool, restructured so each switch states
  * its consequence rather than only its name.
  */

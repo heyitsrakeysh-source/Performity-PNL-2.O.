@@ -3,8 +3,8 @@
 /**
  * Margin-leak heatmap.
  *
- * The ramp is diverging — two poles that read as opposite with a neutral grey
- * midpoint — because the quantity has a real zero (profitable / loss-making).
+ * The ramp is diverging, two poles that read as opposite with a neutral grey
+ * midpoint, because the quantity has a real zero (profitable / loss-making).
  * Every cell carries its own value as text, so colour is redundant encoding
  * rather than the only channel.
  */
@@ -100,7 +100,7 @@ export function MarginHeatmap({ skus }: { skus: SkuRow[] }) {
                         "transition-transform duration-150 group-hover:scale-[1.015]",
                       )}
                       style={{ background: rampColor(t), color: inkFor(t) }}
-                      title={`${s.name} — ${c.label}: ${c.format(v)}`}
+                      title={`${s.name} · ${c.label}: ${c.format(v)}`}
                     >
                       {c.format(v)}
                     </div>

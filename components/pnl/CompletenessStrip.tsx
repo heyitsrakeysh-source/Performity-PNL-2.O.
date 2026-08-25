@@ -37,7 +37,7 @@ export function CompletenessStrip({ onReview, className }: { onReview?: () => vo
 
       <div className="min-w-[220px] flex-1">
         <p className="text-[13px] font-semibold text-ink">
-          Data {completeness.pct.toFixed(0)}% complete — {completeness.missing} input
+          Data {completeness.pct.toFixed(0)}% complete, {completeness.missing} input
           {completeness.missing === 1 ? "" : "s"} missing
         </p>
         <p className="mt-0.5 text-[12px] text-ink-3">
@@ -45,7 +45,7 @@ export function CompletenessStrip({ onReview, className }: { onReview?: () => vo
             .slice(0, 3)
             .map((f) => f.label)
             .join(", ")}
-          {completeness.missing > 3 ? ` and ${completeness.missing - 3} more` : ""} — accuracy of the net profit line
+          {completeness.missing > 3 ? ` and ${completeness.missing - 3} more` : ""}, accuracy of the net profit line
           depends on these.
         </p>
       </div>

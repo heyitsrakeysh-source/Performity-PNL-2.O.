@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * "Edit inputs" — the panel the original tool called Edit Row Values.
+ * "Edit inputs". The panel the original tool called Edit Row Values.
  *
  * What changed: the numbers at the top recalculate *as you type*, so you can
  * see what an input does to net margin before committing it; each field shows
@@ -144,7 +144,7 @@ export function EditDrawer({
     commitEdits(monthKey, draft);
     push({
       title: `Saved ${changeCount} change${changeCount === 1 ? "" : "s"}`,
-      body: `${month.label} recalculated — net profit is now ${money(preview.netProfit)}.`,
+      body: `${month.label} recalculated, net profit is now ${money(preview.netProfit)}.`,
       tone: "good",
     });
     onClose();
@@ -305,7 +305,7 @@ export function EditDrawer({
               const sectionFields = section.fields;
               const sFilled = sectionFields.filter((f) => valueOf(f) !== null).length;
               // Derived rows are another view of a figure already counted, so
-              // they are excluded — otherwise the section total double-counts.
+              // they are excluded, otherwise the section total double-counts.
               const sectionTotal = sectionFields
                 .filter((f) => !f.readOnly)
                 .reduce((s, f) => s + (valueOf(f) ?? 0), 0);
@@ -506,7 +506,7 @@ function FieldRow({
             {field.children.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-2 text-[11px]">
                 <span className="text-ink-3">{c.label}</span>
-                <span className="tnum text-ink-2">{c.seed === null ? "—" : money(c.seed)}</span>
+                <span className="tnum text-ink-2">{c.seed === null ? "-" : money(c.seed)}</span>
               </li>
             ))}
           </ul>

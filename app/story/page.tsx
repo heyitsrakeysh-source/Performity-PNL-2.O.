@@ -24,6 +24,8 @@ import { Sparkline } from "@/components/charts/Sparkline";
 import { Waterfall } from "@/components/charts/Waterfall";
 import { TrendPanels } from "@/components/charts/TrendPanels";
 import { ChartCard } from "@/components/charts/primitives";
+import { ChartInsight } from "@/components/charts/ChartInsight";
+import { explainProfitMove, trendInsight } from "@/lib/data/insights";
 import { InsightsList } from "@/components/pnl/InsightsList";
 import { cn } from "@/lib/cn";
 
@@ -52,13 +54,13 @@ const ACTION: Record<string, { label: string; href: string; body: string }> = {
 };
 
 export default function StoryPage() {
-  const { current, previous, months } = useWorkspace();
+  const { current, comparison, months, bestMonth, visibleMonths } = useWorkspace();
 
-  const drivers = attributeChange(previous, current);
-  const insights = buildInsights(previous, current);
-  const netChange = current.netProfit - previous.netProfit;
+  const drivers = attributeChange(comparison, current);
+  const insights = buildInsights(comparison, current);
+  const netChange = current.netProfit - comparison.netProfit;
   const worst = drivers.find((d) => d.impact < 0);
-  const trail12 = months.slice(-12);
+  const trail12 = visibleMonths.length > 1 ? visibleMonths : months.slice(-12);
 
   const headline =
     current.netProfit < 0
@@ -72,7 +74,7 @@ export default function StoryPage() {
           <>
             <Chip tone="brand">{current.label}</Chip>
             <Chip tone={netChange < 0 ? "critical" : "good"}>
-              {money(netChange, { sign: true })} vs {previous.label}
+              {money(netChange, { sign: true })} vs {comparison.label}
             </Chip>
           </>
         }
@@ -87,9 +89,9 @@ export default function StoryPage() {
         subtitle={
           <>
             In {current.label} you booked {money(current.totalRevenue)} of revenue across{" "}
-            {num(current.orders)} orders and kept {money(current.netProfit)}. Compared with {previous.label} net
+            {num(current.orders)} orders and kept {money(current.netProfit)}. Compared with {comparison.label} net
             profit moved by {money(netChange, { sign: true })}. The breakdown below attributes every rupee of that
-            move to a specific driver — the parts sum to the whole with no residual.
+            move to a specific driver. The parts sum to the whole with no residual.
           </>
         }
         actions={<Button href="/forecast" variant="primary" iconRight={<ArrowRight size={14} />}>See where the month lands</Button>}
@@ -101,7 +103,7 @@ export default function StoryPage() {
           icon={<Banknote size={18} />}
           label="You earned"
           value={moneyCompact(current.totalRevenue)}
-          delta={<Delta current={current.totalRevenue} previous={previous.totalRevenue} size="sm" />}
+          delta={<Delta current={current.totalRevenue} previous={comparison.totalRevenue} size="sm" />}
           note={`${num(current.orders)} orders at ${money(current.aov)} average order value.`}
           tone="brand"
         />
@@ -113,7 +115,7 @@ export default function StoryPage() {
           delta={
             <Delta
               current={current.totalRevenue - current.netProfit}
-              previous={previous.totalRevenue - previous.netProfit}
+              previous={comparison.totalRevenue - comparison.netProfit}
               higherIsBetter={false}
               size="sm"
             />
@@ -126,8 +128,8 @@ export default function StoryPage() {
           icon={<Wallet size={18} />}
           label="You kept"
           value={money(current.netProfit)}
-          delta={<Delta current={current.netProfit} previous={previous.netProfit} size="sm" />}
-          note={`A ${pct(Math.abs(current.netMarginPct), 2)} ${current.netProfit < 0 ? "loss" : "margin"} — ${money(Math.abs(current.netProfit / current.orders))} ${current.netProfit < 0 ? "lost" : "kept"} on every order.`}
+          delta={<Delta current={current.netProfit} previous={comparison.netProfit} size="sm" />}
+          note={`A ${pct(Math.abs(current.netMarginPct), 2)} ${current.netProfit < 0 ? "loss" : "margin"}, ${money(Math.abs(current.netProfit / current.orders))} ${current.netProfit < 0 ? "lost" : "kept"} on every order.`}
           tone={current.netProfit < 0 ? "critical" : "good"}
           emphasis
         />
@@ -137,12 +139,13 @@ export default function StoryPage() {
       <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[1.55fr_1fr]">
         <ChartCard
           title="Why profit changed"
-          subtitle={`Every driver between ${previous.label} and ${current.label}`}
+          subtitle={`Every driver between ${comparison.label} and ${current.label}`}
           info="Drivers are substituted one at a time into the same profit equation, so the bars sum exactly to the change in net profit."
+          insight={explainProfitMove(current, comparison, bestMonth)}
           table={{
             columns: ["Driver", "Impact on net profit", "Detail"],
             rows: [
-              [previous.label, money(previous.netProfit), "Starting point"],
+              [comparison.label, money(comparison.netProfit), "Starting point"],
               ...drivers.map((d) => [d.label, money(d.impact), d.detail]),
               [current.label, money(current.netProfit), "Ending point"],
             ],
@@ -152,7 +155,7 @@ export default function StoryPage() {
             height={270}
             labelLines={2}
             items={[
-              { label: previous.label, value: previous.netProfit, kind: "anchor" },
+              { label: comparison.label, value: comparison.netProfit, kind: "anchor" },
               ...drivers.map((d) => ({ label: d.label, value: d.impact, kind: "delta" as const, detail: d.detail })),
               { label: current.label, value: current.netProfit, kind: "anchor" },
             ]}
@@ -185,12 +188,12 @@ export default function StoryPage() {
         />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           {[
-            { label: "AOV", value: current.aov, prev: previous.aov, fmt: money, better: true, get: (m: typeof current) => m.aov },
-            { label: "COGS / order", value: current.cogsPerOrder, prev: previous.cogsPerOrder, fmt: money, better: false, get: (m: typeof current) => m.cogsPerOrder },
-            { label: "Shipping / order", value: current.shippingPerOrder, prev: previous.shippingPerOrder, fmt: money, better: false, get: (m: typeof current) => m.shippingPerOrder },
-            { label: "CAC", value: current.cac, prev: previous.cac, fmt: money, better: false, get: (m: typeof current) => m.cac },
-            { label: "Contribution / order", value: current.contributionPerOrder, prev: previous.contributionPerOrder, fmt: money, better: true, get: (m: typeof current) => m.contributionPerOrder },
-            { label: "Break-even ROAS", value: current.breakEvenRoas, prev: previous.breakEvenRoas, fmt: (v: number) => v.toFixed(2), better: false, get: (m: typeof current) => m.breakEvenRoas },
+            { label: "AOV", value: current.aov, prev: comparison.aov, fmt: money, better: true, get: (m: typeof current) => m.aov },
+            { label: "COGS / order", value: current.cogsPerOrder, prev: comparison.cogsPerOrder, fmt: money, better: false, get: (m: typeof current) => m.cogsPerOrder },
+            { label: "Shipping / order", value: current.shippingPerOrder, prev: comparison.shippingPerOrder, fmt: money, better: false, get: (m: typeof current) => m.shippingPerOrder },
+            { label: "CAC", value: current.cac, prev: comparison.cac, fmt: money, better: false, get: (m: typeof current) => m.cac },
+            { label: "Contribution / order", value: current.contributionPerOrder, prev: comparison.contributionPerOrder, fmt: money, better: true, get: (m: typeof current) => m.contributionPerOrder },
+            { label: "Break-even ROAS", value: current.breakEvenRoas, prev: comparison.breakEvenRoas, fmt: (v: number) => v.toFixed(2), better: false, get: (m: typeof current) => m.breakEvenRoas },
           ].map((s) => (
             <div key={s.label} className="rounded-lg border border-line bg-surface-2 p-3">
               <p className="text-[11.5px] font-medium text-ink-3">{s.label}</p>
@@ -213,8 +216,9 @@ export default function StoryPage() {
       <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[1.55fr_1fr]">
         <ChartCard
           title="Twelve-month profitability"
-          subtitle="Net profit in rupees, net margin as a rate — each on its own scale."
+          subtitle="Net profit in rupees, net margin as a rate, each on its own scale."
           info="Two units never share one y-axis. The upper panel is money; the lower panel is a rate."
+          insight={trendInsight(trail12, bestMonth)}
           table={{
             columns: ["Month", "Revenue", "Net profit", "Net margin"],
             rows: trail12.map((m) => [m.label, money(m.totalRevenue), money(m.netProfit), pct(m.netMarginPct, 2)]),
