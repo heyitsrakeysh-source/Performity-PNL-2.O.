@@ -1,0 +1,29 @@
+{
+  "name": "performity-pnl",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Performity P&L 2.0 — a profitability intelligence platform for D2C brands.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lucide-react": "0.544.0",
+    "next": "^16.3.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.13",
+    "@types/node": "22.15.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "tailwindcss": "4.1.13",
+    "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

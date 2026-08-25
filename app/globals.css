@@ -1,0 +1,665 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ============================================================================
+   PERFORMITY DESIGN TOKENS
+   Light is the base scope; every token is redefined for [data-theme="dark"].
+   Chart series colors are validated (OKLab CVD ΔE / lightness band / contrast)
+   against the surfaces below — see README "Data visualization system".
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --- planes & surfaces --- */
+  --canvas: #f4f5f9;
+  --canvas-accent: #eceefa;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --surface-3: #f1f3f9;
+  --surface-inset: #f6f7fb;
+  --overlay: rgba(14, 16, 30, 0.42);
+
+  /* --- ink --- */
+  --ink: #0d1020;
+  --ink-2: #4c5470;
+  --ink-3: #737c96;
+  --ink-4: #9aa2b8;
+  --ink-invert: #ffffff;
+
+  /* --- lines --- */
+  --line: #e5e8f0;
+  --line-strong: #d4d9e6;
+  --line-soft: #eef0f6;
+  --grid: #ecedf4;
+  --axis: #d9dde8;
+
+  /* --- brand --- */
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --brand-press: #3730a3;
+  --brand-ink: #372fbe;
+  --brand-soft: #eef0ff;
+  --brand-soft-2: #e0e3ff;
+  --brand-ring: rgba(79, 70, 229, 0.35);
+  --brand-glow: rgba(79, 70, 229, 0.16);
+
+  /* --- status (reserved: never used as a series color) --- */
+  --good: #0ca30c;
+  --good-ink: #067a1b;
+  --good-soft: #e6f6e8;
+  --warning: #fab219;
+  --warning-ink: #8a5a00;
+  --warning-soft: #fef4e2;
+  --serious: #ec835a;
+  --serious-ink: #a04a1f;
+  --serious-soft: #fdefe7;
+  --critical: #d03b3b;
+  --critical-ink: #b42318;
+  --critical-soft: #fdecec;
+
+  /* --- categorical series (validated, light surface #ffffff) --- */
+  --series-1: #4f46e5; /* COGS            */
+  --series-2: #e9691f; /* Shipping        */
+  --series-3: #0f9d8c; /* Packaging       */
+  --series-4: #d99400; /* Transaction fees */
+  --series-5: #e06ca5; /* Ad spend        */
+  --series-6: #7e57d8; /* Fixed cost      */
+
+  /* --- sequential ramp (single hue, light -> dark) --- */
+  --seq-100: #e7e9ff;
+  --seq-200: #ccd0fb;
+  --seq-300: #a9adf6;
+  --seq-400: #868bef;
+  --seq-500: #6a6ce9;
+  --seq-600: #4f46e5;
+  --seq-700: #3b32b8;
+
+  /* --- diverging poles (loss <-> profit) with neutral midpoint --- */
+  --div-neg-3: #b83232;
+  --div-neg-2: #e06a6a;
+  --div-neg-1: #f6cdcd;
+  --div-mid: #eeeff3;
+  --div-pos-1: #cceadb;
+  --div-pos-2: #5cba8a;
+  --div-pos-3: #17804f;
+
+  /* --- elevation --- */
+  --shadow-xs: 0 1px 2px rgba(13, 16, 32, 0.05);
+  --shadow-sm: 0 1px 3px rgba(13, 16, 32, 0.06), 0 1px 2px rgba(13, 16, 32, 0.04);
+  --shadow-md: 0 6px 20px -6px rgba(13, 16, 32, 0.12), 0 2px 6px -2px rgba(13, 16, 32, 0.06);
+  --shadow-lg: 0 28px 60px -18px rgba(13, 16, 32, 0.22), 0 8px 20px -8px rgba(13, 16, 32, 0.1);
+  --shadow-pop: 0 20px 44px -14px rgba(13, 16, 32, 0.24);
+  --ring-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+  /* --- geometry --- */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-2xl: 24px;
+
+  /* --- motion --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 130ms;
+  --dur: 220ms;
+  --dur-slow: 420ms;
+
+  --sidebar-w: 248px;
+  --sidebar-w-collapsed: 68px;
+  --topbar-h: 60px;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #090b12;
+  --canvas-accent: #0d1020;
+  --surface: #12151f;
+  --surface-2: #171b27;
+  --surface-3: #1d2230;
+  --surface-inset: #0f121b;
+  --overlay: rgba(3, 4, 9, 0.66);
+
+  --ink: #f2f4fa;
+  --ink-2: #a8b0c6;
+  --ink-3: #838ca4;
+  --ink-4: #666e86;
+  --ink-invert: #0d1020;
+
+  --line: #242a39;
+  --line-strong: #333a4d;
+  --line-soft: #1c2130;
+  --grid: #1e2431;
+  --axis: #2c3243;
+
+  --brand: #7a76f0;
+  --brand-hover: #8d8af3;
+  --brand-press: #6b66e8;
+  --brand-ink: #a5a2f7;
+  --brand-soft: #1a1c38;
+  --brand-soft-2: #23264a;
+  --brand-ring: rgba(122, 118, 240, 0.45);
+  --brand-glow: rgba(122, 118, 240, 0.22);
+
+  --good: #35c759;
+  --good-ink: #5ddb7b;
+  --good-soft: #10251a;
+  --warning: #f5b93b;
+  --warning-ink: #f7c968;
+  --warning-soft: #2a2113;
+  --serious: #f0946b;
+  --serious-ink: #f3a986;
+  --serious-soft: #2b1c14;
+  --critical: #f26b6b;
+  --critical-ink: #f78d8d;
+  --critical-soft: #2c1417;
+
+  /* categorical re-stepped for the dark surface (#12151f) — not a flip */
+  --series-1: #7a76f0;
+  --series-2: #dd6428;
+  --series-3: #149c89;
+  --series-4: #c2851c;
+  --series-5: #de5e93;
+  --series-6: #8c6ad8;
+
+  --seq-100: #1b1e3a;
+  --seq-200: #262a55;
+  --seq-300: #343a75;
+  --seq-400: #454c9b;
+  --seq-500: #5a60c4;
+  --seq-600: #7a76f0;
+  --seq-700: #9d9af5;
+
+  --div-neg-3: #f0706f;
+  --div-neg-2: #a83f45;
+  --div-neg-1: #3a1c22;
+  --div-mid: #1e2431;
+  --div-pos-1: #12301f;
+  --div-pos-2: #2b7a4f;
+  --div-pos-3: #4fc27f;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.7), 0 2px 6px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 30px 64px -20px rgba(0, 0, 0, 0.85), 0 10px 22px -10px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 24px 50px -16px rgba(0, 0, 0, 0.8);
+  --ring-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ---------------------------------------------------------------------------
+   Map semantic vars onto Tailwind's token space. `inline` keeps the generated
+   utilities pointing at the vars, so a theme swap repaints without a rebuild.
+   ------------------------------------------------------------------------- */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-canvas-accent: var(--canvas-accent);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-inset: var(--surface-inset);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-ink-invert: var(--ink-invert);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-line-soft: var(--line-soft);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-press: var(--brand-press);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-2: var(--brand-soft-2);
+
+  --color-good: var(--good);
+  --color-good-ink: var(--good-ink);
+  --color-good-soft: var(--good-soft);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-soft: var(--warning-soft);
+  --color-serious: var(--serious);
+  --color-serious-ink: var(--serious-ink);
+  --color-serious-soft: var(--serious-soft);
+  --color-critical: var(--critical);
+  --color-critical-ink: var(--critical-ink);
+  --color-critical-soft: var(--critical-soft);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-2xl);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-pop: var(--shadow-pop);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+}
+
+/* ============================================================================
+   BASE
+   ========================================================================== */
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  font-variant-ligatures: contextual;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--brand-soft-2);
+  color: var(--brand-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* thin, unobtrusive scrollbars that follow the theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-4);
+  background-clip: content-box;
+}
+
+/* ============================================================================
+   UTILITY LAYER
+   ========================================================================== */
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Hero + stat-tile figures keep proportional figures on purpose. */
+@utility figure-lg {
+  font-variant-numeric: proportional-nums;
+  letter-spacing: -0.028em;
+  font-weight: 600;
+}
+
+@utility label-xs {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+@utility hairline {
+  border: 1px solid var(--line);
+}
+
+/* A soft brand wash used behind hero areas. */
+@utility aurora {
+  position: relative;
+  isolation: isolate;
+}
+@utility aurora-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 120% at 8% 0%, var(--brand-glow), transparent 62%),
+    radial-gradient(50% 110% at 95% 8%, rgba(224, 108, 165, 0.1), transparent 60%);
+}
+
+/* ============================================================================
+   MOTION
+   ========================================================================== */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--brand-ring);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.anim-fade-up {
+  animation: fade-up var(--dur-slow) var(--ease-out) both;
+}
+.anim-fade-in {
+  animation: fade-in var(--dur) var(--ease-out) both;
+}
+.anim-scale-in {
+  animation: scale-in var(--dur) var(--ease-out) both;
+}
+.anim-slide-in-right {
+  animation: slide-in-right 320ms var(--ease-out) both;
+}
+.anim-spin {
+  animation: spin 900ms linear infinite;
+}
+
+/* Stagger helper — set --i on the child. */
+.stagger > * {
+  animation: fade-up 480ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-3);
+  border-radius: var(--r-sm);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--surface) 70%, transparent),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+/* Charts draw their strokes in on mount. */
+.draw-in {
+  stroke-dasharray: var(--len, 2000);
+  stroke-dashoffset: var(--len, 2000);
+  animation: draw 1100ms var(--ease-out) forwards;
+}
+
+.grow-y {
+  transform-origin: bottom;
+  animation: grow-y 620ms var(--ease-out) both;
+}
+.grow-x {
+  transform-origin: left;
+  animation: grow-x 680ms var(--ease-out) both;
+}
+
+/* Held-render pattern: never flash a skeleton on refetch. */
+.is-pending {
+  opacity: 0.45;
+  filter: saturate(0.6);
+  transition: opacity var(--dur) var(--ease-out), filter var(--dur) var(--ease-out);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .draw-in {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ============================================================================
+   PRINT — the board report route is designed to be printed to PDF
+   ========================================================================== */
+@media print {
+  [data-print-hide] {
+    display: none !important;
+  }
+  /* The shell reserves room for a sidebar that is no longer there. */
+  [data-shell-main] {
+    padding-left: 0 !important;
+  }
+  body {
+    background: #fff;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  /* Keep a card and its heading on one page. */
+  section,
+  table {
+    break-inside: avoid;
+  }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}
+
+/* ============================================================================
+   RANGE SLIDER — used by the what-if simulator.
+   The native input stays (keyboard + screen reader); the visible track is
+   drawn behind it so the fill can run out from the centre in either direction.
+   ========================================================================== */
+
+.slider-wrap {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.slider-track {
+  position: absolute;
+  inset-inline: 0;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  pointer-events: none;
+}
+
+.slider-fill {
+  position: absolute;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--brand);
+  pointer-events: none;
+  transition: left 90ms linear, width 90ms linear, background-color 150ms;
+}
+
+.slider-notch {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  height: 11px;
+  transform: translateX(-50%);
+  background: var(--line-strong);
+  pointer-events: none;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 20px;
+  background: transparent;
+}
+.slider::-moz-range-track {
+  height: 20px;
+  background: transparent;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: 1.5px;
+  height: 17px;
+  width: 17px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--brand);
+  box-shadow: var(--shadow-sm);
+  transition: transform 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
+}
+
+.slider::-moz-range-thumb {
+  height: 15px;
+  width: 15px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--brand);
+  box-shadow: var(--shadow-sm);
+}
+
+.slider:hover::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.slider:active::-webkit-slider-thumb,
+.slider:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 5px var(--brand-glow);
+}
+.slider:focus-visible {
+  outline: none;
+}
